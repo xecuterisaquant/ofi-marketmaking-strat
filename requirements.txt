@@ -1,0 +1,23 @@
+# Core dependencies from replication project
+pandas>=2.0.0
+numpy>=1.24.0
+statsmodels>=0.14.0
+pyarrow>=14.0.0
+pyreadr>=0.5.0
+
+# New dependencies for market maker
+scipy>=1.11.0          # Exponential distributions, statistical functions
+matplotlib>=3.8.0      # Enhanced plotting
+seaborn>=0.13.0        # Statistical visualizations
+pyyaml>=6.0.0          # Configuration file handling
+
+# Development and testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.0.0          # Code formatting
+flake8>=6.0.0          # Linting
+mypy>=1.5.0            # Type checking
+
+# Optional but recommended
+jupyter>=1.0.0         # Interactive analysis
+ipython>=8.12.0        # Enhanced REPL

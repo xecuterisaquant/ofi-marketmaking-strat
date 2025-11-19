@@ -1,0 +1,2 @@
+# This file ensures the data/raw directory is tracked by git even when empty
+# TAQ .rda files should be placed in this directory
