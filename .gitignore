@@ -44,9 +44,13 @@ htmlcov/
 .hypothesis/
 
 # Data files (large)
+data/
 data/raw/*.rda
 data/raw/*.parquet
 data/processed/
+
+# Separate repository (has its own GitHub repo)
+ofi-replication/
 *.csv
 *.h5
 *.hdf5
