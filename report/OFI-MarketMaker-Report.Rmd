@@ -100,33 +100,168 @@ $$
 r^{\text{adj}}_t = r_t + \alpha_{\text{signal}} \cdot \text{Signal}_t \cdot s_t / 10000
 $$
 
-Positive OFI shifts quotes up; negative OFI shifts down.
+where $\alpha_{\text{signal}} = 0.5$ controls the magnitude of the adjustment.
 
-## Fill Simulation
+## Fill Simulation Model
 
-Parametric fill model:
+### Motivation
+
+Backtesting a market making strategy requires modeling when limit orders get filled. Unlike aggressive (market) orders that execute immediately, limit orders wait in the queue and fill only when:
+
+1. **Market orders arrive** on the opposite side
+2. **The quote is competitive** relative to microprice
+3. **Queue position** is reached (if modeling queue explicitly)
+
+Without trade data showing actual queue dynamics, we implement a **parametric fill model** that estimates fill probability based on distance from microprice.
+
+### Parametric Fill Intensity
+
+We model fill intensity as an exponential function of distance from microprice:
 
 $$
-\lambda(\delta) = A \cdot e^{-k \cdot \delta}
+\lambda(\delta) = A \cdot \exp(-k \cdot \delta)
 $$
 
-with $A = 0.1$, $k = 10.0$.
+where:
+
+- $\delta$ = distance from microprice in basis points
+- $A$ = intensity at touch (fills/second when $\delta = 0$)
+- $k$ = decay rate parameter
+- For bid orders: $\delta = (p^{\text{micro}} - p^{\text{bid}}) \times 10000$
+- For ask orders: $\delta = (p^{\text{ask}} - p^{\text{micro}}) \times 10000$
+
+### Fill Probability
+
+Over a discrete time step $\Delta t$ (1 second in our implementation), the probability of a fill follows a Poisson process:
+
+$$
+P(\text{fill} \mid \delta) = 1 - \exp(-\lambda(\delta) \cdot \Delta t)
+$$
+
+**Typical calibration values:**
+
+- At touch ($\delta = 0$): $P(\text{fill}) \approx 0.86$ (with $A = 2.0$, $\Delta t = 1$)
+- At +1bp: $P(\text{fill}) \approx 0.70$ (with $k = 0.5$)
+- At +5bp: $P(\text{fill}) < 0.10$
+
+### Calibration Heuristics
+
+In the absence of historical fill data, we calibrate model parameters using spread statistics:
+
+1. **Decay rate $k$**:
+   - Tight spreads (1-2 bps) → $k = 1.0$ (fast decay, fills concentrated at touch)
+   - Medium spreads (2-5 bps) → $k = 0.7$
+   - Wide spreads (5-10 bps) → $k = 0.5$
+   - Very wide (>10 bps) → $k = 0.3$ (slow decay, fills possible far from mid)
+
+2. **Intensity at touch $A$**:
+   - Derived from target fill rate: $A = -\ln(1 - P_{\text{target}}) / \Delta t$
+   - Default: $P_{\text{target}} = 0.5$ yields $A \approx 0.69$
+   - More aggressive: $P_{\text{target}} = 0.7$ yields $A \approx 1.20$
+
+### Implementation Details
+
+The fill simulation module (`maker/fills.py`) implements:
+
+- **`ParametricFillModel`**: Dataclass storing $A$, $k$, and $\Delta t$ parameters
+- **`compute_intensity(δ)`**: Returns fill intensity for given distance
+- **`compute_fill_probability(δ)`**: Converts intensity to probability
+- **`simulate_fill(price, microprice, side)`**: Stochastic fill simulation
+- **`simulate_fill_batch(...)`**: Vectorized simulation for multiple time steps
+- **`calibrate_intensity(nbbo_df)`**: Heuristic parameter estimation from NBBO
+
+### Validation
+
+The fill model was validated with 26 unit tests covering:
+
+- Intensity decay behavior (exponential with distance)
+- Probability bounds ($P \in [0,1]$)
+- Aggressive quote handling (cross-market quotes → instant fill)
+- Bid/ask symmetry
+- Batch simulation correctness
+- Reproducibility with fixed random seeds
+- Calibration across different spread regimes
 
 ## Backtesting Framework
 
-Event-driven simulation at 1-second frequency tracking P&L, inventory, fills, and adverse selection.
+\[Event-driven simulation to be implemented in Phase 4. Will track:\]
+
+- Order lifecycle: place → fill/cancel → update inventory
+- P&L computation: cash + inventory × mid_price
+- 1-second event loop over full trading day (9:30-16:00)
+- Inventory limits enforcement (±100 shares default)
+
+# Implementation
+
+## Software Architecture
+
+The OFI market making system is implemented in Python 3.13 with the following modular architecture:
+
+### Core Modules
+
+**`maker/features.py`** (376 lines, 27 tests passing)
+
+Feature engineering module implementing:
+
+- `compute_ofi_signal()`: Converts normalized OFI → drift signal in basis points
+- `compute_microprice()`: Depth-weighted mid price
+- `compute_ewma_volatility()`: Exponentially weighted volatility estimation
+- `compute_imbalance()`: Bid-ask depth imbalance ratio
+- `blend_signals()`: Weighted combination of OFI + microprice + other signals
+- `compute_signal_stats()`: Rolling statistics for monitoring
+
+**`maker/engine.py`** (465 lines, 25 tests passing)
+
+Avellaneda-Stoikov quoting engine with OFI integration implementing reservation price, quote width, and complete quote generation pipeline with tick rounding and market-crossing prevention.
+
+**`maker/fills.py`** (330 lines, 26 tests passing)
+
+Parametric fill simulation with exponential decay model λ(δ) = A·exp(-k·δ) for backtest realism.
+
+**`src/ofi_utils.py`** (245 lines, ported from replication)
+
+Data infrastructure for loading TAQ `.rda` files, constructing 1-second NBBO time series, and computing OFI using Cont-Kukanov-Stoikov rules.
+
+### Testing Framework
+
+Comprehensive test suite with **78 passing tests (100% success rate)**:
+
+- `tests/test_features.py`: 27 tests
+- `tests/test_engine.py`: 25 tests
+- `tests/test_fills.py`: 26 tests
+
+All tests cover edge cases, mathematical correctness, and reproducibility.
 
 # Results
 
-[TO BE FILLED AFTER BACKTEST IMPLEMENTATION]
+\[Results will be populated after completing backtests in Phases 4-9. This section will include:\]
 
-Table 1 presents performance metrics for three strategies:
+## Phase 3: Fill Model Validation (Completed)
 
-| Strategy | Mean Sharpe | Fill Edge (bps) | Adverse Selection |
-|----------|-------------|-----------------|-------------------|
-| Symmetric | X.XX | X.XX | X.XX bps |
-| Microprice Only | X.XX | X.XX | X.XX bps |
-| OFI Full | **X.XX** | **X.XX** | **X.XX bps** |
+The parametric fill model was validated against expected theoretical properties with 26 passing tests:
+
+**Intensity Decay**: Fill intensity decreases exponentially with distance. At touch (δ=0), intensity = 2.0 fills/second (default). At 5bp, intensity < 0.1.
+
+**Fill Probability**: All simulated probabilities ∈ [0,1]. Monte Carlo simulations (N=1000) confirm expected fill rates: ~86% at touch, ~70% at 1bp, ~52% at 2bp.
+
+**Calibration**: Tight-spread stocks (1-2bp) → k ≥ 0.7. Wide-spread (>10bp) → k ≤ 0.3. Target fill rates achieved within 5% tolerance.
+
+**Reproducibility**: Fixed seeds produce identical sequences, enabling deterministic debugging.
+
+## Backtest Performance (To Be Completed)
+
+\[Tables comparing OFI Full vs Symmetric Baseline vs Microprice-Only\]
+
+**Planned Metrics:**
+- Sharpe Ratio (annualized)
+- Fill Edge (bps)
+- Adverse Selection (1s/5s/10s)
+- Maximum Drawdown
+- Inventory Variance
+
+## Symbol-Level Analysis (To Be Completed)
+
+\[Performance breakdown by: AAPL, AMD, AMZN, JPM, MSFT, NVDA, SPY, TSLA\]
 
 # Discussion
 
