@@ -184,12 +184,127 @@ The fill model was validated with 26 unit tests covering:
 
 ## Backtesting Framework
 
-\[Event-driven simulation to be implemented in Phase 4. Will track:\]
+The backtesting framework simulates realistic market making at 1-second granularity throughout the trading day. The event-driven architecture integrates feature computation, quote generation, fill simulation, and inventory management into a complete pipeline.
 
-- Order lifecycle: place → fill/cancel → update inventory
-- P&L computation: cash + inventory × mid_price
-- 1-second event loop over full trading day (9:30-16:00)
-- Inventory limits enforcement (±100 shares default)
+### Architecture
+
+The backtest engine (`BacktestEngine`) operates in discrete time steps:
+
+1. **Data Loading**: Load NBBO data from `.rda` files and preprocess
+   - RTH filtering: 9:30-16:00 ET only
+   - 1-second resampling with forward-fill for missing ticks
+   - Cross-market removal (bid > ask cases)
+
+2. **Feature Computation**: Vectorized calculation at start
+   - OFI signals for multiple windows (5s, 10s, 30s rolling)
+   - Microprice: depth-weighted reference price
+   - EWMA volatility: exponentially weighted historical vol
+
+3. **Event Loop**: For each 1-second timestamp:
+   - Get current market state (bid, ask, sizes)
+   - Generate quotes using `QuotingEngine`
+   - Place limit orders (bid/ask pair)
+   - Simulate fills using `ParametricFillModel`
+   - Update inventory and cash
+   - Record state history
+
+4. **Result Storage**: Complete time series of:
+   - Inventory, cash, mark-to-market P&L
+   - Market prices (bid, ask, mid, microprice)
+   - Strategy quotes (our bid, our ask)
+   - All fills with timestamps and prices
+
+### Order Lifecycle
+
+Each second, the backtest follows this order management cycle:
+
+**Placement**: New bid/ask orders are placed at strategy-determined prices. Previous unfilled orders are cancelled (no queue persistence assumed).
+
+**Fill Simulation**: For each active order, compute distance from microprice and simulate fill stochastically:
+
+$$
+\delta_{\text{bid}} = (\text{microprice} - P_{\text{bid}}) \times 10000 \quad \text{(in bps)}
+$$
+$$
+\delta_{\text{ask}} = (P_{\text{ask}} - \text{microprice}) \times 10000
+$$
+
+Fill probability: $P(\text{fill}|\delta) = 1 - \exp(-\lambda(\delta) \cdot \Delta t)$ where $\lambda(\delta) = A \cdot e^{-k\delta}$
+
+Aggressive quotes (δ < -5bp, crossing the market) fill with 100% probability.
+
+**Inventory Update**: When filled:
+
+- Bid fill (sold shares): `cash += price × size`, `inventory -= size`
+- Ask fill (bought shares): `cash -= price × size`, `inventory += size`
+
+**P&L Tracking**: Mark-to-market P&L computed each second:
+
+$$
+\text{P&L}_t = \text{cash}_t + \text{inventory}_t \times \text{mid}_t
+$$
+
+This captures both realized gains (from fills) and unrealized risk (inventory exposure).
+
+### Data Pipeline
+
+**Loading Function** (`load_nbbo_day`):
+
+```python
+nbbo_data, trading_day = load_nbbo_day('data/NBBO/2017-01-03.rda')
+```
+
+Returns 1-second NBBO DataFrame with columns: `bid`, `ask`, `bid_sz`, `ask_sz`.
+
+**Preprocessing** (`preprocess_nbbo`):
+
+- Filter non-positive prices
+- Remove crossed markets
+- Ensure data quality for downstream processing
+
+**Integration with OFI Computation**:
+
+Uses `compute_ofi_depth_mid` from `src/ofi_utils.py` to compute OFI using Cont-Kukanov-Stoikov tick rules, then normalizes by rolling depth.
+
+### Configuration
+
+`BacktestConfig` dataclass specifies:
+
+- **Quoting parameters**: Risk aversion γ, terminal time T, tick size
+- **Fill model**: Intensity A, decay k, time step Δt
+- **OFI windows**: Multiple windows for feature computation (default: [5, 10, 30] seconds)
+- **Inventory limits**: Max/min position size (default: ±100 shares)
+- **Random seed**: For reproducible fill simulation
+
+### Output Format
+
+`BacktestResult` provides:
+
+- **Time series**: pandas Series indexed by timestamp
+  - `inventory`, `cash`, `pnl`
+  - `bid`, `ask`, `mid`, `microprice`, `volatility`
+  - `our_bid`, `our_ask`
+  - `ofi_5s`, `ofi_10s`, `ofi_30s`
+  
+- **Fills list**: Complete record of all executions with timestamps, sides, prices, sizes
+
+- **Summary statistics**: Total fills, volume, final P&L, final inventory
+
+- **Export methods**: 
+  - `to_dataframe()`: Combine all time series
+  - `fills_dataframe()`: Convert fills to DataFrame
+
+**Example Usage**:
+
+```python
+config = BacktestConfig(random_seed=42)
+engine = BacktestEngine(config)
+result = engine.run_single_day(nbbo_data, symbol='AAPL', date=trading_day)
+
+print(f"Final P&L: ${result.final_pnl:.2f}")
+print(f"Total Fills: {result.total_fills}")
+print(f"Total Volume: {result.total_volume} shares")
+```
 
 # Implementation
 
@@ -218,17 +333,40 @@ Avellaneda-Stoikov quoting engine with OFI integration implementing reservation 
 
 Parametric fill simulation with exponential decay model λ(δ) = A·exp(-k·δ) for backtest realism.
 
+**`maker/backtest.py`** (NEW - 530 lines, 24 tests passing)
+
+Event-driven backtesting framework implementing:
+
+- `BacktestEngine`: Core simulation engine with order lifecycle management
+- `BacktestConfig`: Configuration dataclass for strategy parameters
+- `Order`: Limit order representation
+- `Fill`: Executed trade with cash flow tracking
+- `BacktestResult`: Complete results with time series and summary stats
+- `load_nbbo_day()`: Data loading from `.rda` files
+- `preprocess_nbbo()`: Data cleaning and validation
+
+Integrates all components (features, engine, fills) into end-to-end simulation loop.
+
 **`src/ofi_utils.py`** (245 lines, ported from replication)
 
 Data infrastructure for loading TAQ `.rda` files, constructing 1-second NBBO time series, and computing OFI using Cont-Kukanov-Stoikov rules.
 
 ### Testing Framework
 
-Comprehensive test suite with **78 passing tests (100% success rate)**:
+Comprehensive test suite with **102 passing tests (100% success rate)**:
 
 - `tests/test_features.py`: 27 tests
-- `tests/test_engine.py`: 25 tests
+- `tests/test_engine.py`: 25 tests  
 - `tests/test_fills.py`: 26 tests
+- `tests/test_backtest.py`: 24 tests (NEW)
+  - Order and Fill dataclass validation
+  - BacktestEngine state management
+  - Order placement and cancellation
+  - Inventory update mechanics
+  - P&L reconciliation (cash + inventory × mid = total P&L)
+  - End-to-end integration tests
+  - Data loading and preprocessing
+  - Reproducibility with fixed seeds
 
 All tests cover edge cases, mathematical correctness, and reproducibility.
 
@@ -247,6 +385,36 @@ The parametric fill model was validated against expected theoretical properties 
 **Calibration**: Tight-spread stocks (1-2bp) → k ≥ 0.7. Wide-spread (>10bp) → k ≤ 0.3. Target fill rates achieved within 5% tolerance.
 
 **Reproducibility**: Fixed seeds produce identical sequences, enabling deterministic debugging.
+
+## Phase 4: Backtest Framework Validation (Completed)
+
+The event-driven backtest framework was validated with 24 integration tests ensuring end-to-end correctness:
+
+**Order Lifecycle**: Order placement correctly updates active orders, cancelling previous quotes. Order dataclass validation ensures only 'bid'/'ask' sides and positive sizes are accepted.
+
+**Inventory Mechanics**: Fill execution properly updates cash and inventory:
+
+- Bid fills (sales): Cash increases by `price × size`, inventory decreases
+- Ask fills (purchases): Cash decreases, inventory increases  
+- Net effect captured in cash + inventory changes
+
+**P&L Reconciliation**: Mark-to-market P&L computation verified: `P&L = cash + inventory × mid`. Tested with both long and short positions. Maximum error < 1e-10 (numerical precision).
+
+**Integration Tests**: End-to-end backtest on 60-second synthetic NBBO confirmed:
+
+- Quotes generated within market (our_bid ≤ ask, our_ask ≥ bid)
+- Features computed correctly (OFI, microprice, volatility)
+- State history recorded with correct timestamps
+- Result dataframes export cleanly
+
+**Data Loading**: Actual NBBO file loading tested (`2017-01-03.rda`):
+
+- Correctly parsed 1-second RTH data
+- Trading day extracted from filename
+- Crossed markets removed
+- All required columns present
+
+**Reproducibility**: Fixed random seeds produce identical fill sequences across runs, enabling deterministic testing and debugging.
 
 ## Backtest Performance (To Be Completed)
 

@@ -15,8 +15,9 @@ from .ofi_utils import (
     filter_crossed,
     parse_trading_day_from_filename,
     build_tob_series_1s,
-    compute_ofi_top_of_book,
-    run_regression_with_hc,
+    compute_ofi_depth_mid,
+    normalize_ofi,
+    run_ols_xy,
 )
 
 __all__ = [
