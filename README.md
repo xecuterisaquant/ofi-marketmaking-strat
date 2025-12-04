@@ -2,20 +2,23 @@
 
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-52%20passing-brightgreen.svg)](https://github.com/xecuterisaquant/ofi-marketmaking-strat)
+[![Tests](https://img.shields.io/badge/tests-141%20passing-brightgreen.svg)](https://github.com/xecuterisaquant/ofi-marketmaking-strat)
 
 Extension of Cont, Kukanov, & Stoikov (2014) OFI Replication - Implementing an OFI-driven market making strategy using the Avellaneda-Stoikov framework.
 
-## 🎯 Project Status: 🚧 PHASES 0-2 COMPLETE
+## 🎯 Project Status: 🚧 PHASES 0-5 COMPLETE
 
 **Completed Components**:
-- ✅ Features engineering with OFI signals (27 tests passing)
-- ✅ Avellaneda-Stoikov quoting engine (25 tests passing)
-- ✅ Comprehensive unit test coverage (52/52 tests)
-- ✅ Documentation and reproduction guide
+- ✅ Features engineering with OFI signals (27 tests)
+- ✅ Avellaneda-Stoikov quoting engine (25 tests)
+- ✅ Parametric fill simulation model (26 tests)
+- ✅ Event-driven backtest framework (24 tests)
+- ✅ Performance metrics with anti-overfitting design (39 tests)
+- ✅ Comprehensive unit test coverage (141/141 tests, 100% success)
+- ✅ Documentation and anti-overfitting protocol
 
 **In Progress**:
-- 🚧 Fill simulation and backtest framework (Phases 3-4)
+- 🚧 Strategy configurations and execution scripts (Phases 6-7)
 
 ---
 
@@ -48,22 +51,24 @@ ofi-marketmaking-strat/
 ├── 📄 REPRODUCTION_GUIDE.md        # Step-by-step reproduction instructions
 ├── 📄 requirements.txt             # Python dependencies
 │
-├── 📂 maker/                       # Market making modules (PHASES 1-2 ✅)
+├── 📂 maker/                       # Market making modules (PHASES 1-5 ✅)
 │   ├── __init__.py
 │   ├── features.py                 # ✅ OFI signals, volatility, microprice (406 lines)
 │   ├── engine.py                   # ✅ Avellaneda-Stoikov quoting engine (465 lines)
-│   ├── fills.py                    # 🚧 Fill simulation (Phase 3)
-│   └── backtest.py                 # 🚧 Backtest framework (Phase 4)
+│   ├── fills.py                    # ✅ Parametric fill simulation (473 lines)
+│   ├── backtest.py                 # ✅ Event-driven backtest framework (530 lines)
+│   └── metrics.py                  # ✅ Performance metrics (450 lines)
 │
 ├── 📂 src/                         # Infrastructure from replication
 │   ├── __init__.py
 │   └── ofi_utils.py                # ✅ OFI calculation, NBBO handling (245 lines)
 │
-├── 📂 tests/                       # Unit tests (52 passing ✅)
+├── 📂 tests/                       # Unit tests (141 passing ✅)
 │   ├── test_features.py            # ✅ 27 tests for feature engineering
 │   ├── test_engine.py              # ✅ 25 tests for quoting engine
-│   ├── test_fills.py               # 🚧 Fill simulation tests (Phase 3)
-│   └── test_backtest.py            # 🚧 Backtest tests (Phase 4)
+│   ├── test_fills.py               # ✅ 26 tests for fill simulation
+│   ├── test_backtest.py            # ✅ 24 tests for backtest framework
+│   └── test_metrics.py             # ✅ 39 tests for performance metrics
 │
 ├── 📂 scripts/                     # Executable scripts (Phases 5-7)
 │   ├── run_maker_backtest.py       # Main backtest runner
@@ -122,14 +127,21 @@ pip install -r requirements.txt
 
 ### Run Tests
 ```bash
-# Run all unit tests (52 tests)
+# Run all unit tests (141 tests)
 pytest tests/ -v
 
 # Expected output:
-# tests/test_features.py::test_compute_ofi_signal PASSED           [  1/52]
-# tests/test_features.py::test_compute_microprice PASSED           [  2/52]
-# ... (50 more tests)
-# ====================== 52 passed in X.XXs ======================
+# tests/test_features.py::test_compute_ofi_signal PASSED           [  1/141]
+# tests/test_features.py::test_compute_microprice PASSED           [  2/141]
+# ... (139 more tests)
+# ====================== 141 passed in X.XXs ======================
+
+# Test breakdown:
+# - test_features.py: 27 tests (feature engineering)
+# - test_engine.py: 25 tests (quoting engine)
+# - test_fills.py: 26 tests (fill simulation)
+# - test_backtest.py: 24 tests (backtest framework)
+# - test_metrics.py: 39 tests (performance metrics)
 ```
 
 ### Quick Validation
@@ -171,6 +183,71 @@ python scripts/validate_single_day.py --symbol AAPL --date 2017-01-03
    - Rolling statistics for monitoring and threshold setting
 
 **All functions tested** with 27 passing unit tests covering edge cases, mathematical correctness, and index preservation.
+
+### Fill Simulation (`maker/fills.py`)
+
+**Parametric fill model** for limit order execution:
+
+#### Core Components:
+
+1. **Fill Intensity**:
+   ```
+   λ(δ) = A * exp(-k * δ)
+   ```
+   - `δ`: distance from microprice (in bps)
+   - `A = 2.0`: base intensity (fills/second at δ=0)
+   - `k = 0.5`: decay rate
+
+2. **Fill Probability**:
+   ```
+   P(fill|δ, Δt) = 1 - exp(-λ(δ) * Δt)
+   ```
+   - Exponential survival model
+   - Δt = 1 second (typical timestep)
+
+3. **Calibration**: Heuristic parameters expected ~86% fill at microprice, ~33% at 10 bps away
+
+**26 passing tests** validate intensity decay, probability bounds, calibration accuracy, and reproducibility.
+
+### Backtest Framework (`maker/backtest.py`)
+
+**Event-driven simulation** for market making:
+
+#### Simulation Loop:
+
+1. **Initialize**: Load NBBO data, set parameters, create engine
+2. **Each Second** (9:30-16:00 ET):
+   - Update features (OFI, microprice, volatility)
+   - Generate quotes using `QuotingEngine`
+   - Simulate fills using `ParametricFillModel`
+   - Update inventory and cash
+   - Track P&L: `pnl_t = cash_t + inventory_t * mid_t`
+3. **Output**: Complete trading history with fills, inventory, quotes
+
+**24 passing tests** validate order lifecycle, P&L calculation, inventory management, and data pipeline integration.
+
+### Performance Metrics (`maker/metrics.py`)
+
+**Comprehensive evaluation metrics** with strict anti-overfitting design:
+
+#### Key Metrics:
+
+1. **Sharpe Ratio**: Annualized risk-adjusted return
+2. **Sortino Ratio**: Downside deviation only (no penalty for upside volatility)
+3. **Maximum Drawdown**: Peak-to-trough decline
+4. **Fill Edge**: Profitability per fill vs microprice
+5. **Adverse Selection**: Post-fill price drift at 1s/5s/10s horizons
+6. **Inventory Metrics**: Position risk statistics
+7. **Signal Correlation**: OFI validation (not for parameter tuning)
+
+**Anti-Overfitting Safeguards**:
+- All parameters fixed from literature (β=0.036, γ=0.1, A=2.0, k=0.5)
+- No parameter optimization on backtest data
+- Pre-defined 4 strategy configurations
+- Data split: Week 1 validation, Weeks 2-4 test
+- Report ALL results (no cherry-picking)
+
+**39 passing tests** validate metric calculations using synthetic data with known answers.
 
 ### Quoting Engine (`maker/engine.py`)
 
@@ -262,8 +339,10 @@ MIT License - see LICENSE file for details
 ---
 
 **Last Updated**: December 3, 2025  
-**Status**: 🚧 Phases 0-2 Complete - Features & Engine Tested (52/52 tests passing)  
+**Status**: 🚧 Phases 0-5 Complete - All Core Components Tested (141/141 tests passing, 100% success)  
 **Python Version**: 3.13.0  
-**Next Milestone**: Phase 3 (Fill Simulation)
+**Next Milestone**: Phase 6 (Strategy Configurations)
+
+**Anti-Overfitting Protocol**: See `ANTI_OVERFITTING_PROTOCOL.md` for complete testing strategy and safeguards.
 
 See `REPRODUCTION_GUIDE.md` for detailed setup instructions. Run `pytest tests/ -v` to validate installation.

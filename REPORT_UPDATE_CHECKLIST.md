@@ -40,79 +40,65 @@ This document ensures that `report/OFI-MarketMaker-Report.Rmd` stays synchronize
 
 ---
 
-### Phase 4: Backtest Framework (Next)
-**Sections to Update:**
+### ✅ Phase 4: Backtest Framework (Completed)
+**Sections Updated:**
 
-1. **Methodology → Backtesting Framework** (replace placeholder):
+1. **Methodology → Backtesting Framework**:
    - Event-driven simulation architecture
    - Order lifecycle: place → wait → fill/cancel → update
    - P&L computation: cash_t + inventory_t × mid_t
    - Inventory management and limits
    - Time step: 1-second granularity
+   - Mathematical formulation documented
 
 2. **Implementation → Core Modules**:
-   - Add `maker/backtest.py` description
-   - Document BacktestEngine class
-   - Describe BacktestResult dataclass
+   - Added `maker/backtest.py` description (530 lines)
+   - Documented BacktestEngine class
+   - Described BacktestResult dataclass
+   - 24 unit tests, all passing
 
 3. **Implementation → Data Pipeline**:
-   - Detail data loading (load_nbbo_day function)
+   - Detailed data loading (load_nbbo_day function)
    - RTH filtering and 1-second resampling
    - Integration with src/ofi_utils.py
 
-**Template:**
-```markdown
-## Backtesting Framework
-
-### Event-Driven Architecture
-
-The backtest engine simulates market making at 1-second intervals throughout the trading day (9:30-16:00 ET). At each time step:
-
-1. **Update State**: Load NBBO (bid, ask, sizes) and compute features (OFI, microprice, volatility)
-2. **Generate Quotes**: Call QuotingEngine to produce bid/ask prices
-3. **Simulate Fills**: Use ParametricFillModel to determine which orders fill
-4. **Update Inventory**: Adjust cash and position based on fills
-5. **Track Metrics**: Record P&L, inventory, quotes, fills
-
-### Order Lifecycle
-
-Orders are managed as follows:
-- **Placement**: New bid/ask quotes submitted each second
-- **Cancellation**: Previous unfilled orders are cancelled (no queue persistence)
-- **Fill Simulation**: Stochastic fill based on distance from microprice
-- **Inventory Update**: cash_t+1 = cash_t - price×quantity×sign, inventory_t+1 = inventory_t + quantity×sign
-
-### P&L Calculation
-
-Mark-to-market P&L at time t:
-$$
-\text{P&L}_t = \text{cash}_t + \text{inventory}_t \times \text{mid}_t
-$$
-
-Realized P&L captures trading gains; unrealized P&L reflects inventory risk.
-```
+**Status**: ✅ Complete
 
 ---
 
-### Phase 5: Performance Metrics
-**Sections to Update:**
+### ✅ Phase 5: Performance Metrics (Completed)
+**Sections Updated:**
 
-1. **Methodology → Performance Metrics** (new subsection):
-   - Sharpe ratio formula
-   - Sortino ratio (downside deviation)
-   - Maximum drawdown
+1. **Methodology → Performance Metrics**:
+   - Sharpe ratio formula (annualized)
+   - Sortino ratio (downside deviation only)
+   - Maximum drawdown (peak-to-trough)
    - Fill edge: E[(mid - fill_price) × sign]
-   - Adverse selection: E[mid_{t+k} - fill_price | fill at t]
-   - Inventory variance
+   - Adverse selection: E[mid_{t+k} - fill_price | fill at t] at 1s/5s/10s
+   - Inventory variance and statistics
+   - Signal correlation for validation
+   - Anti-overfitting design philosophy documented
 
 2. **Implementation → Core Modules**:
-   - Add `maker/metrics.py` description
-   - List key functions (compute_sharpe, compute_max_drawdown, etc.)
+   - Added `maker/metrics.py` description (450 lines)
+   - Listed all 8 key functions
+   - PerformanceMetrics dataclass (19 fields)
+   - 39 unit tests, all passing
 
-3. **Results → Performance Metrics** (replace placeholders):
-   - Add actual Sharpe, Sortino, drawdown values
-   - Fill edge statistics
-   - Adverse selection analysis
+3. **Results → Phase 5 Validation**:
+   - Documented all 39 test categories
+   - Verified metric mathematical correctness
+   - Anti-overfitting safeguards validated
+   - Ready for actual backtest runs
+
+4. **Created ANTI_OVERFITTING_PROTOCOL.md**:
+   - No parameter optimization on test data
+   - Fixed parameters from literature (β=0.036, γ=0.1, A=2.0, k=0.5)
+   - Pre-defined 4 strategy configurations
+   - Data split: Week 1 validation, Weeks 2-4 test
+   - Report ALL results requirement
+
+**Status**: ✅ Complete
 
 ---
 
@@ -268,14 +254,14 @@ over 20 trading days. OFI strategy achieves 23% higher terminal P&L with lower d
 
 ## Status Tracking
 
-- [x] Phase 0-2: Foundation
-- [x] Phase 3: Fill Simulation
-- [ ] Phase 4: Backtest Framework
-- [ ] Phase 5: Performance Metrics
+- [x] Phase 0-2: Foundation (Features + Engine)
+- [x] Phase 3: Fill Simulation (26 tests)
+- [x] Phase 4: Backtest Framework (24 tests)
+- [x] Phase 5: Performance Metrics (39 tests)
 - [ ] Phase 6: Strategy Configs
 - [ ] Phase 7: Execution Scripts
 - [ ] Phase 8: Integration Tests
 - [ ] Phase 9: Full Backtests
 - [ ] Phase 10: Final Polish
 
-**Current Report Status**: Methodology and Implementation sections current through Phase 3. Results section has placeholders ready for Phases 4-9 data.
+**Current Report Status**: Methodology and Implementation sections complete through Phase 5. Anti-overfitting protocol documented. Total: 141/141 tests passing (100% success). Ready for strategy configuration and actual backtest runs.
