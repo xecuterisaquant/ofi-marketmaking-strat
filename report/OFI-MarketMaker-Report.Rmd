@@ -306,6 +306,101 @@ print(f"Total Fills: {result.total_fills}")
 print(f"Total Volume: {result.total_volume} shares")
 ```
 
+## Performance Metrics
+
+### Design Philosophy: Anti-Overfitting
+
+**Critical Principle:** All metrics are **pure calculations** from observed data. NO parameter optimization or curve fitting on backtest results.
+
+**Fixed Parameters (NOT fitted):**
+- OFI Beta (β = 0.036): From **separate replication study** (Jan 2017, 40 symbol-days)
+- Risk Aversion (γ = 0.1): From Avellaneda-Stoikov (2008) literature
+- Fill Model (A = 2.0, k = 0.5): From market microstructure theory
+
+This ensures results reflect **validation** of OFI signals, not overfitted backtest optimization.
+
+### P&L Metrics
+
+**Sharpe Ratio** (risk-adjusted return):
+
+$$
+\text{Sharpe} = \frac{\mu_r - r_f}{\sigma_r} \sqrt{N}
+$$
+
+where $\mu_r$ is mean return, $\sigma_r$ is return volatility, $r_f$ is risk-free rate, $N$ is periods per year.
+
+**Sortino Ratio** (downside risk only):
+
+$$
+\text{Sortino} = \frac{\mu_r - r_f}{\sigma_{\text{down}}} \sqrt{N}
+$$
+
+where $\sigma_{\text{down}}$ is standard deviation of negative returns only.
+
+**Maximum Drawdown**:
+
+$$
+\text{MDD} = \max_{t} \left( \max_{\tau \leq t} \text{P&L}_{\tau} - \text{P&L}_t \right)
+$$
+
+Maximum peak-to-trough decline in P&L.
+
+### Fill Quality Metrics
+
+**Fill Edge** (profitability per fill):
+
+$$
+\text{Edge}_{\text{bid}} = \frac{P_{\text{fill}} - P_{\text{mid}}}{P_{\text{mid}}} \times 10000 \quad \text{(bps)}
+$$
+
+$$
+\text{Edge}_{\text{ask}} = \frac{P_{\text{mid}} - P_{\text{fill}}}{P_{\text{mid}}} \times 10000 \quad \text{(bps)}
+$$
+
+Positive edge means we filled better than mid price.
+
+**Adverse Selection** (post-fill price movement):
+
+For bid fills (we sold):
+$$
+\text{AS}_{h} = \frac{P_{\text{mid}}(t+h) - P_{\text{mid}}(t)}{P_{\text{mid}}(t)} \times 10000 \quad \text{(bps)}
+$$
+
+For ask fills (we bought):
+$$
+\text{AS}_{h} = \frac{P_{\text{mid}}(t) - P_{\text{mid}}(t+h)}{P_{\text{mid}}(t)} \times 10000
+$$
+
+Positive values indicate adverse selection (price moved against us).
+
+Measured at horizons $h \in \{1s, 5s, 10s\}$.
+
+### Inventory Risk Metrics
+
+**Inventory Variance**: $\text{Var}(q_t)$ - measures position risk
+
+**Time at Limits**: Percentage of time at max/min inventory bounds
+
+**Average Inventory**: $\overline{q} = \frac{1}{T}\sum_t q_t$ - directional bias check
+
+### Signal Validation
+
+**OFI-Return Correlation**: Pearson correlation between OFI signal and subsequent price changes
+
+$$
+\rho(\text{OFI}_t, \Delta P_{t+1}) = \frac{\text{Cov}(\text{OFI}_t, \Delta P_{t+1})}{\sigma_{\text{OFI}} \cdot \sigma_{\Delta P}}
+$$
+
+Used for validation only - NOT for parameter tuning.
+
+### Conservative Design
+
+All metrics use:
+- Sample standard deviation (ddof=1), not population
+- No small-sample bias corrections
+- Exact calculations, no approximations
+- Robust handling of edge cases (empty data, division by zero)
+
 # Implementation
 
 ## Software Architecture
@@ -347,26 +442,41 @@ Event-driven backtesting framework implementing:
 
 Integrates all components (features, engine, fills) into end-to-end simulation loop.
 
+**`maker/metrics.py`** (NEW - 450 lines, 39 tests passing)
+
+Performance metrics module with **strict anti-overfitting design**:
+
+- `compute_sharpe_ratio()`: Annualized risk-adjusted return
+- `compute_sortino_ratio()`: Downside deviation only
+- `compute_max_drawdown()`: Peak-to-trough decline  
+- `compute_fill_edge()`: Profitability per fill vs mid
+- `compute_adverse_selection()`: Post-fill price drift (1s/5s/10s)
+- `compute_inventory_metrics()`: Position risk statistics
+- `compute_signal_correlation()`: OFI validation (not for tuning)
+- `compute_all_metrics()`: Complete performance summary
+
+**Key Design:** All functions are **pure calculations** - no parameter fitting or optimization. All parameters (beta, gamma, fill model) fixed from literature before running backtests.
+
 **`src/ofi_utils.py`** (245 lines, ported from replication)
 
 Data infrastructure for loading TAQ `.rda` files, constructing 1-second NBBO time series, and computing OFI using Cont-Kukanov-Stoikov rules.
 
 ### Testing Framework
 
-Comprehensive test suite with **102 passing tests (100% success rate)**:
+Comprehensive test suite with **141 passing tests (100% success rate)**:
 
 - `tests/test_features.py`: 27 tests
 - `tests/test_engine.py`: 25 tests  
 - `tests/test_fills.py`: 26 tests
-- `tests/test_backtest.py`: 24 tests (NEW)
-  - Order and Fill dataclass validation
-  - BacktestEngine state management
-  - Order placement and cancellation
-  - Inventory update mechanics
-  - P&L reconciliation (cash + inventory × mid = total P&L)
-  - End-to-end integration tests
-  - Data loading and preprocessing
-  - Reproducibility with fixed seeds
+- `tests/test_backtest.py`: 24 tests
+- `tests/test_metrics.py`: 39 tests (NEW)
+  - Sharpe/Sortino with known distributions
+  - Max drawdown correctness
+  - Fill edge calculation accuracy
+  - Adverse selection measurement
+  - Inventory risk metrics
+  - Signal correlation validation
+  - All edge cases handled properly
 
 All tests cover edge cases, mathematical correctness, and reproducibility.
 
@@ -415,6 +525,55 @@ The event-driven backtest framework was validated with 24 integration tests ensu
 - All required columns present
 
 **Reproducibility**: Fixed random seeds produce identical fill sequences across runs, enabling deterministic testing and debugging.
+
+## Phase 5: Performance Metrics Validation (Completed)
+
+The metrics module was validated with 39 comprehensive tests using known-answer synthetic data:
+
+**Sharpe/Sortino Ratios**: Tested with known distributions:
+
+- Zero returns → Sharpe = 0
+- Constant returns (no volatility) → Sharpe = 0 (robust to numerical precision)
+- Positive/negative mean → correct sign
+- Sortino ≥ Sharpe for positive-mean strategies (only penalizes downside)
+- Proper annualization scaling with $\sqrt{N}$
+
+**Maximum Drawdown**: Edge cases validated:
+
+- Monotonic increase → DD = 0
+- Monotonic decrease → DD = total drop
+- Multiple peaks → correctly identifies maximum
+- Percentage calculation accurate (50% drop verified)
+
+**Fill Edge**: Bid/ask symmetry confirmed:
+
+- Bid fill above mid → positive edge (correct calculation)
+- Ask fill below mid → positive edge (symmetric)
+- Adverse fills → negative edge detected
+- Multiple fills → correct averaging
+
+**Adverse Selection**: Post-fill drift measured correctly:
+
+- Bid fills + price rise → positive AS (adverse)
+- Ask fills + price fall → positive AS (adverse)  
+- Favorable moves → negative AS
+- Multiple horizons (1s/5s/10s) tracked accurately
+
+**Inventory Metrics**: Risk measurement validated:
+
+- Zero inventory → all zeros
+- Constant inventory → zero variance
+- Time at limits correctly detected (5/7 = 71.4%)
+- Statistics (mean, std, min, max) accurate
+
+**Signal Correlation**: Validation tool tested:
+
+- Perfect correlation → ρ = 1.0
+- Perfect anti-correlation → ρ = -1.0  
+- Random data → ρ ≈ 0
+- Insufficient data → returns 0 (safe default)
+
+**Anti-Overfitting Verification**: All tests use **fixed synthetic data** with known answers. No data-dependent assertions - only mathematical correctness verified.
 
 ## Backtest Performance (To Be Completed)
 
