@@ -1,0 +1,64 @@
+# OFI Ablation Strategy
+# Reduced OFI signal strength to test sensitivity
+# Purpose: Ablation study - measure OFI impact with reduced weight
+
+strategy:
+  name: "ofi_ablation"
+  description: "OFI-driven market making with reduced signal strength"
+  version: "1.0"
+
+# Quoting parameters (Avellaneda-Stoikov)
+quoting:
+  risk_aversion: 0.1           # γ - risk aversion parameter (fixed from literature)
+  terminal_time: 300.0         # T - time to close position (5 minutes)
+  order_arrival_rate: 1.0      # k - market order arrival rate
+  max_inventory: 100           # Maximum long position (shares)
+  min_inventory: -100          # Maximum short position (shares)
+  tick_size: 0.01              # Minimum price increment
+  min_spread_bps: 1.0          # Minimum bid-ask spread (basis points)
+  
+  # Signal parameters - REDUCED OFI strength
+  signal_adjustment_factor: 0.25    # Half the full OFI strength (0.5 → 0.25)
+  inventory_urgency_factor: 1.5     # Cubic urgency near limits
+
+# Feature engineering
+features:
+  # OFI parameters - same β but lower adjustment factor
+  ofi_beta: 0.036              # β - OFI coefficient (from replication study)
+  ofi_horizon_seconds: 60      # OFI lookback window
+  
+  # Volatility estimation
+  volatility_halflife_seconds: 60.0
+  volatility_min_periods: 10
+  
+  # Signal blending - REDUCED OFI weight
+  alpha_ofi: 0.5               # 50% OFI signal weight (vs 70% in full)
+  alpha_imbalance: 0.2         # 20% imbalance weight (vs 30% in full)
+  # Total signal strength: 70% of full strategy
+
+# Fill simulation
+fill_model:
+  base_intensity: 2.0          # A - fills/second at microprice (fixed)
+  decay_rate: 0.5              # k - exponential decay rate (fixed)
+  min_probability: 1e-6        # Numerical stability floor
+  max_probability: 0.99        # Prevent certainty
+
+# Backtest settings
+backtest:
+  initial_cash: 0.0            # Start with zero cash
+  initial_inventory: 0         # Start market neutral
+  commission_per_share: 0.0    # No transaction costs (simplification)
+  random_seed: 42              # Reproducibility
+
+# Data filtering
+data:
+  start_time: "09:30:00"       # RTH start
+  end_time: "16:00:00"         # RTH end
+  resample_frequency: "1S"     # 1-second bars
+  
+# Validation metadata
+metadata:
+  created_date: "2025-12-06"
+  anti_overfitting: true
+  parameters_source: "Ablation variant: 50% OFI strength vs full (no optimization)"
+  notes: "Ablation study: signal_factor=0.25, α_ofi=0.5 (both halved from full strategy)"
