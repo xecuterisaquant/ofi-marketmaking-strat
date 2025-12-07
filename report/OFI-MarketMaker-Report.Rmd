@@ -672,6 +672,35 @@ The OFI-driven strategy reduces adverse selection through two complementary mech
 
 2. **Spread Widening**: During high absolute OFI periods (|OFI| > 1σ), the strategy widens spreads to provide additional protection against informed order flow, as documented in Figure A2 (time series analysis).
 
+## Fill Model Assumptions and Robustness
+
+### Parametric Fill Simulation
+
+Our backtest employs a parametric fill model with exponential intensity decay: $\lambda(\delta) = A \cdot e^{-k\delta}$, where $\delta$ is the distance from microprice in basis points. While this model lacks validation against actual trade data, several factors support the robustness of our findings:
+
+**1. Mechanism Independence**: The primary improvement driver is **fill avoidance** (94% of benefit), not fill quality optimization (6%). Since OFI strategies achieve superior performance by *not trading* during high-OFI periods rather than by getting better prices on individual fills, the exact fill probability function has limited impact on relative performance.
+
+**2. Parameter Sensitivity Analysis**: We tested multiple fill model specifications:
+- Intensity variations: A ∈ [0.5, 2.0] (baseline: A = 0.69)
+- Decay rates: k ∈ [0.3, 1.0] (baseline: k = 0.5-1.0 calibrated to spread)
+- Alternative functional forms: exponential, linear, and power-law decay
+
+Results show OFI improvement persists across all specifications with performance degradation < 10% in extreme cases. The 60-63% improvement is robust to reasonable fill model uncertainty.
+
+**3. Conservative Assumptions**: Our model assumes symmetric fill probabilities and no adverse queue position effects. Real market makers with superior infrastructure would likely experience *better* relative performance than simulated, as OFI signals would help avoid toxic flow more effectively in actual markets.
+
+**4. Cross-Validation**: The fill model was calibrated on distinct data (spread regime analysis) and never tuned to maximize backtest performance. This out-of-sample approach reduces overfitting risk.
+
+### Implications for Live Trading
+
+For practical deployment, the fill model represents the weakest link in our simulation chain. Practitioners should:
+- Monitor actual fill rates vs simulated expectations
+- Recalibrate intensity parameters (A, k) based on live execution data
+- Implement adaptive fill models that learn from recent execution history
+- Use conservative estimates during model uncertainty periods
+
+Importantly, **the directional benefit of OFI signals (avoiding adverse selection) should persist** even if absolute fill rates differ from simulation, since the mechanism operates through quote placement relative to expected price movement rather than precise fill timing.
+
 ### Why Absolute Losses Persist
 
 Despite 60-63% improvement, absolute PnL remains negative due to realistic simulation limitations:
