@@ -323,10 +323,10 @@ def compute_adverse_selection(
         
     Notes
     -----
-    For bid fills (we sold):
-        AS = (mid[t+h] - mid[t]) - positive means price rose after we sold
-    For ask fills (we bought):
-        AS = (mid[t] - mid[t+h]) - positive means price fell after we bought
+    For bid fills (our bid was hit → we BOUGHT):
+        AS = (mid[t] - mid[t+h]) - positive means price fell after we bought (adverse)
+    For ask fills (our ask was hit → we SOLD):
+        AS = (mid[t+h] - mid[t]) - positive means price rose after we sold (adverse)
     
     Uses only data available at fill time (no look-ahead).
     """
@@ -353,12 +353,15 @@ def compute_adverse_selection(
                 mid_future = mid_prices.iloc[future_idx]
                 
                 # Compute adverse move
+                # CRITICAL: fill.side refers to OUR side (bid/ask), not the aggressor
+                # fill.side == 'bid' → our BID was hit → WE BOUGHT → adverse if price falls
+                # fill.side == 'ask' → our ASK was hit → WE SOLD → adverse if price rises
                 if fill.side == 'bid':
-                    # We sold - adverse if price rises
-                    adverse_move = mid_future - mid_at_fill
-                else:  # ask
-                    # We bought - adverse if price falls
+                    # We bought - adverse if price falls after we bought
                     adverse_move = mid_at_fill - mid_future
+                else:  # ask
+                    # We sold - adverse if price rises after we sold
+                    adverse_move = mid_future - mid_at_fill
                 
                 # Convert to bps
                 adverse_move_bps = (adverse_move / mid_at_fill) * 10000

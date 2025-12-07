@@ -71,19 +71,23 @@ class Fill:
     """Represents an executed fill."""
     
     timestamp: pd.Timestamp
-    side: str  # 'bid' (we sold) or 'ask' (we bought)
+    side: str  # 'bid' (we bought) or 'ask' (we sold)
     price: float
     size: int
     
     @property
     def cash_flow(self) -> float:
         """Cash flow from this fill (positive = cash in)."""
-        return self.price * self.size * (1 if self.side == 'bid' else -1)
+        # When our BID is hit → we BUY → cash OUT (negative)
+        # When our ASK is hit → we SELL → cash IN (positive)
+        return self.price * self.size * (-1 if self.side == 'bid' else 1)
     
     @property
     def inventory_change(self) -> int:
         """Change in inventory from this fill."""
-        return -self.size if self.side == 'bid' else self.size
+        # When our BID is hit → we BUY → inventory UP (+size)
+        # When our ASK is hit → we SELL → inventory DOWN (-size)
+        return self.size if self.side == 'bid' else -self.size
 
 
 @dataclass
@@ -218,7 +222,7 @@ class BacktestEngine:
         if self.config.random_seed is not None:
             np.random.seed(self.config.random_seed)
     
-    def place_orders(self, timestamp: pd.Timestamp, bid_price: float, ask_price: float, size: int = 100):
+    def place_orders(self, timestamp: pd.Timestamp, bid_price: float, ask_price: float, size: int = 100, volatility: float = 0.0):
         """
         Place new bid and ask orders.
         
@@ -232,17 +236,33 @@ class BacktestEngine:
             Ask price to quote.
         size : int, default=100
             Order size in shares.
+        volatility : float, default=0.0
+            Current annualized volatility for size scaling.
         """
         # Cancel any existing orders
         self.active_bid = None
         self.active_ask = None
         
+        # Apply volatility-based size scaling if configured
+        actual_size = size
+        if hasattr(self.config, 'volatility_scaling') and self.config.volatility_scaling:
+            vol_threshold = getattr(self.config, 'vol_threshold', 0.30)
+            min_multiplier = getattr(self.config, 'min_size_multiplier', 0.5)
+            
+            if volatility > vol_threshold:
+                # Linear scaling: reduce size as vol increases above threshold
+                # At 2x threshold, use min_multiplier
+                vol_ratio = min((volatility - vol_threshold) / vol_threshold, 1.0)
+                size_multiplier = 1.0 - vol_ratio * (1.0 - min_multiplier)
+                actual_size = int(size * size_multiplier)
+                actual_size = max(actual_size, int(size * min_multiplier))  # Floor at min
+        
         # Place new orders
         if not np.isnan(bid_price) and bid_price > 0:
-            self.active_bid = Order(side='bid', price=bid_price, size=size, timestamp=timestamp)
+            self.active_bid = Order(side='bid', price=bid_price, size=actual_size, timestamp=timestamp)
         
         if not np.isnan(ask_price) and ask_price > 0:
-            self.active_ask = Order(side='ask', price=ask_price, size=size, timestamp=timestamp)
+            self.active_ask = Order(side='ask', price=ask_price, size=actual_size, timestamp=timestamp)
     
     def simulate_fills(self, timestamp: pd.Timestamp, market_mid: float) -> List[Fill]:
         """
@@ -444,10 +464,13 @@ class BacktestEngine:
             )
             
             # Generate quotes
-            our_bid, our_ask = self.engine.generate_quotes(quote_state, time_to_close=300.0)
+            # Use terminal_time as FIXED inventory risk horizon (not time-to-close)
+            # This represents the expected time to flip inventory, typically 30-300 seconds
+            # NOT the time remaining in trading day
+            our_bid, our_ask = self.engine.generate_quotes(quote_state, time_to_close=self.engine.params.terminal_time)
             
-            # Place orders
-            self.place_orders(timestamp, our_bid, our_ask, size=100)
+            # Place orders with volatility-based sizing
+            self.place_orders(timestamp, our_bid, our_ask, size=100, volatility=volatility)
             
             # Simulate fills
             fills = self.simulate_fills(timestamp, mid)

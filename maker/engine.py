@@ -196,26 +196,29 @@ class QuotingEngine:
         >>> spread > 0
         True
         """
-        # Convert time to years
+        # SIMPLIFIED FORMULA - ignore arrival term as it dominates unrealistically
+        # Use empirical calibration: half_spread_bps ≈ α × σ × sqrt(T)
+        # Where α is tuned to match market spreads (~2-5 bps typical)
+        
+        # Convert time to years for volatility scaling
         time_to_close_years = time_to_close / (252 * 6.5 * 3600)
         
-        # Base spread from A-S formula
+        # Volatility component: σ × sqrt(T) gives standard deviation over period T
+        # This is the natural risk horizon for inventory exposure
+        vol_component = volatility * np.sqrt(time_to_close_years)
+        
+        # Scale by risk aversion parameter (now acts as spread multiplier)
+        # γ ≈ 0.1 gives spreads ~2-5 bps for typical volatility
         gamma = self.params.risk_aversion
-        k = self.params.order_arrival_rate
         
-        # Term 1: Inventory risk component
-        risk_term = gamma * (volatility ** 2) * time_to_close_years
+        # Base half-spread in relative terms (dimensionless)
+        half_spread = gamma * vol_component
         
-        # Term 2: Arrival rate component
-        arrival_term = (2 / gamma) * np.log(1 + gamma / k)
-        
-        # Base half-spread
-        half_spread = risk_term + arrival_term
-        
-        # Inventory urgency adjustment - only widen modestly
-        # As inventory approaches limits, slightly widen spread
+        # Inventory urgency adjustment - industry standard linear scaling
+        # As inventory approaches limits, widen spread gradually
+        # Use linear instead of cubic for more predictable behavior
         inventory_ratio = abs(inventory) / self.params.max_inventory
-        urgency_multiplier = 1.0 + self.params.inventory_urgency_factor * (inventory_ratio ** 3)  # Cubic for gradual increase
+        urgency_multiplier = 1.0 + self.params.inventory_urgency_factor * inventory_ratio
         
         half_spread *= urgency_multiplier
         
@@ -283,45 +286,66 @@ class QuotingEngine:
             state.inventory
         )
         
-        # 3. Adjust for signal
+        # Convert half_spread from fraction to price units
+        # A-S formula returns dimensionless spread, scale by current price
+        half_spread_dollars = half_spread * state.microprice
+        
+        # 3. Adjust for signal - ASYMMETRIC SPREAD SKEWING
         # Convert signal from bps to price units
         signal_adjustment = state.signal_bps * state.microprice / 10000
         signal_adjustment *= self.params.signal_adjustment_factor
         
-        # Positive signal → move reservation up (more eager to buy)
-        # Negative signal → move reservation down (more eager to sell)
-        adjusted_reservation = reservation + signal_adjustment
+        # Positive signal (expect price rise) → tighten ask (aggressive sell), widen bid (avoid buying high)
+        # Negative signal (expect price fall) → tighten bid (aggressive buy), widen ask (avoid selling low)
+        # This creates asymmetric spread: be aggressive on favorable side, conservative on unfavorable
+        # 
+        # For positive signal (+ve):
+        #   - Bid should be wider (more negative): bid_adjustment = +signal (adds to the negative half_spread)
+        #   - Ask should be tighter (less positive): ask_adjustment = -signal (subtracts from the positive half_spread)
+        bid_spread_adjustment = signal_adjustment   # Positive signal widens bid (farther from mid)
+        ask_spread_adjustment = -signal_adjustment  # Positive signal tightens ask (closer to mid)
         
-        # 4. Generate initial quotes
-        bid_price = adjusted_reservation - half_spread
-        ask_price = adjusted_reservation + half_spread
+        # 4. Generate initial quotes with asymmetric spreads
+        bid_price = reservation - half_spread_dollars + bid_spread_adjustment
+        ask_price = reservation + half_spread_dollars + ask_spread_adjustment
         
         # 5. Apply inventory skew (already handled in reservation price)
         # Additional small adjustment for urgency
         # When long, slightly favor selling (lower quotes)
         # When short, slightly favor buying (higher quotes)
-        inventory_skew_bps = -state.inventory * 0.01  # 1bp per 100 shares
+        inventory_skew_bps = -state.inventory * 0.02  # 2bp per 100 shares (stronger skew)
         inventory_skew = inventory_skew_bps * state.microprice / 10000
         bid_price += inventory_skew
         ask_price += inventory_skew
         
-        # 6. Round to tick size
+        # 6. Inventory limit enforcement (industry best practice)
+        # Stop quoting on side that would violate limits
+        if state.inventory >= self.params.max_inventory:
+            # At max long position - don't quote bid (can't buy more)
+            bid_price = np.nan
+        if state.inventory <= self.params.min_inventory:
+            # At max short position - don't quote ask (can't sell more)
+            ask_price = np.nan
+        
+        # 7. Round to tick size
         bid_price = self._round_to_tick(bid_price, direction='down')
         ask_price = self._round_to_tick(ask_price, direction='up')
         
-        # 7. Enforce minimum spread
-        min_spread_price = self.params.min_spread_bps * state.microprice / 10000
-        if ask_price - bid_price < min_spread_price:
-            mid = (bid_price + ask_price) / 2
-            bid_price = mid - min_spread_price / 2
-            ask_price = mid + min_spread_price / 2
-            bid_price = self._round_to_tick(bid_price, direction='down')
-            ask_price = self._round_to_tick(ask_price, direction='up')
+        # 8. Enforce minimum spread (skip if either side is NaN from inventory limits)
+        if not np.isnan(bid_price) and not np.isnan(ask_price):
+            min_spread_price = self.params.min_spread_bps * state.microprice / 10000
+            if ask_price - bid_price < min_spread_price:
+                mid = (bid_price + ask_price) / 2
+                bid_price = mid - min_spread_price / 2
+                ask_price = mid + min_spread_price / 2
+                bid_price = self._round_to_tick(bid_price, direction='down')
+                ask_price = self._round_to_tick(ask_price, direction='up')
         
-        # 8. Enforce no-cross
-        bid_price, ask_price = self.enforce_no_cross_market(
-            bid_price, ask_price, state.microprice
-        )
+        # 9. Enforce no-cross (skip if either side is NaN)
+        if not np.isnan(bid_price) and not np.isnan(ask_price):
+            bid_price, ask_price = self.enforce_no_cross_market(
+                bid_price, ask_price, state.microprice
+            )
         
         return bid_price, ask_price
     

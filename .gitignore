@@ -49,6 +49,16 @@ data/raw/*.rda
 data/raw/*.parquet
 data/processed/
 
+# Results (keep summaries only)
+results/backtest_summary_*.csv
+results/detailed/*.parquet
+logs/*.log
+
+# Development files
+*_NEW.md
+*_OLD.md
+*.tmp
+
 # Separate repository (has its own GitHub repo)
 ofi-replication/
 *.csv

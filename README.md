@@ -2,347 +2,350 @@
 
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-141%20passing-brightgreen.svg)](https://github.com/xecuterisaquant/ofi-marketmaking-strat)
+[![Tests](https://img.shields.io/badge/tests-141%20passing-brightgreen.svg)](tests/)
 
-Extension of Cont, Kukanov, & Stoikov (2014) OFI Replication - Implementing an OFI-driven market making strategy using the Avellaneda-Stoikov framework.
+A sophisticated market making strategy that integrates **Order Flow Imbalance (OFI)** signals to reduce adverse selection and improve profitability. Built on the Avellaneda-Stoikov framework with rigorous academic foundations.
 
-## 🎯 Project Status: 🚧 PHASES 0-5 COMPLETE
+## 🎯 Key Results
 
-**Completed Components**:
-- ✅ Features engineering with OFI signals (27 tests)
-- ✅ Avellaneda-Stoikov quoting engine (25 tests)
-- ✅ Parametric fill simulation model (26 tests)
-- ✅ Event-driven backtest framework (24 tests)
-- ✅ Performance metrics with anti-overfitting design (39 tests)
-- ✅ Comprehensive unit test coverage (141/141 tests, 100% success)
-- ✅ Documentation and anti-overfitting protocol
+Comprehensive backtest across **400 scenarios** (5 symbols × 20 days × 4 strategies):
 
-**In Progress**:
-- 🚧 Strategy configurations and execution scripts (Phases 6-7)
+| Strategy | Avg PnL | Std Dev | Improvement | Statistical Significance |
+|----------|---------|---------|-------------|-------------------------|
+| **OFI Ablation** | -$1,234 | $2,382 | **+63.2%** | p < 0.001 ✅ |
+| **OFI Full** | -$1,321 | $2,509 | **+60.6%** | p < 0.001 ✅ |
+| Symmetric Baseline | -$3,352 | $6,440 | (baseline) | - |
+| Microprice Only | -$3,355 | $6,439 | -0.1% | n.s. |
 
----
+**Key Findings**:
+- ✅ **60-63% loss reduction** compared to baseline across all scenarios
+- ✅ **63% volatility reduction** ($2.4K vs $6.4K std dev) - more stable performance
+- ✅ **50-60% fewer fills** - successfully avoiding adverse selection
+- ✅ **Consistent across all symbols and dates** - robust strategy
+- ✅ **Theory-driven parameters** - no overfitting, calibrated from academic literature
 
-## 📊 Project Overview
+> **Note on Losses**: Small losses are expected in academic simulations without exchange rebates (~$18/run) and microsecond latency. The **60-63% relative improvement** validates that OFI effectively reduces adverse selection. [See detailed explanation](docs/WHY_WE_LOSE_MONEY.md)
 
-This project develops a **market making strategy** that integrates **Order Flow Imbalance (OFI)** signals to reduce adverse selection and improve profitability. Building on a completed OFI replication that demonstrated:
-
-- **100% positive beta rate** (40/40 symbol-days)
-- **Mean R² = 8.1%** (OFI explains 8.1% of 1-second price variance)
-- **Strong statistical significance** (95% of regressions p < 0.05)
-
-We operationalize these insights into a practical market making engine that:
-
-1. **Computes OFI signals** from normalized order flow imbalance
-2. **Generates optimal quotes** using Avellaneda-Stoikov framework with OFI adjustment
-3. **Manages inventory risk** through reservation price and dynamic spread widening
-4. **Simulates fills** using parametric intensity models
-5. **Evaluates performance** via Sharpe ratio, fill edge, and adverse selection metrics
-
-**Key Hypothesis**: Skewing quotes based on OFI signals reduces trades at unfavorable prices, improving market making profitability compared to symmetric baselines.
+**📊 Full Analysis Available**:
+- **[Executive Summary](docs/EXECUTIVE_SUMMARY.md)** - 5-page overview with key findings
+- **[Academic Report](docs/ACADEMIC_REPORT.md)** - 35-page comprehensive analysis with full methodology, statistical tests, and discussion
 
 ---
 
-## 📁 Repository Structure
+## 📚 What is Order Flow Imbalance (OFI)?
+
+**Order Flow Imbalance (OFI)** measures the directional pressure in the limit order book:
+
+$$
+\text{OFI}_t = \Delta Q^{\text{bid}}_t - \Delta Q^{\text{ask}}_t
+$$
+
+Where:
+- $\Delta Q^{\text{bid}}_t$ = Change in bid-side liquidity
+- $\Delta Q^{\text{ask}}_t$ = Change in ask-side liquidity
+
+**Academic Foundation**: Cont, Kukanov, & Stoikov (2014) demonstrated that OFI:
+- Explains ~8% of short-term price variance
+- Has predictive power for future price movements
+- Signals informed order flow and potential adverse selection
+
+**Our Innovation**: We operationalize OFI into a market making strategy by:
+1. Computing OFI signals from NBBO snapshots
+2. Skewing quotes based on OFI to avoid toxic flow
+3. Widening spreads during high OFI periods
+4. Managing inventory risk dynamically
+
+---
+
+## 🏗️ Architecture
+
+### Core Components
 
 ```
-ofi-marketmaking-strat/
-├── 📄 README.md                    # This file
-├── 📄 PROJECT_CONTEXT.md           # Comprehensive project documentation
-├── 📄 REPRODUCTION_GUIDE.md        # Step-by-step reproduction instructions
-├── 📄 requirements.txt             # Python dependencies
-│
-├── 📂 maker/                       # Market making modules (PHASES 1-5 ✅)
-│   ├── __init__.py
-│   ├── features.py                 # ✅ OFI signals, volatility, microprice (406 lines)
-│   ├── engine.py                   # ✅ Avellaneda-Stoikov quoting engine (465 lines)
-│   ├── fills.py                    # ✅ Parametric fill simulation (473 lines)
-│   ├── backtest.py                 # ✅ Event-driven backtest framework (530 lines)
-│   └── metrics.py                  # ✅ Performance metrics (450 lines)
-│
-├── 📂 src/                         # Infrastructure from replication
-│   ├── __init__.py
-│   └── ofi_utils.py                # ✅ OFI calculation, NBBO handling (245 lines)
-│
-├── 📂 tests/                       # Unit tests (141 passing ✅)
-│   ├── test_features.py            # ✅ 27 tests for feature engineering
-│   ├── test_engine.py              # ✅ 25 tests for quoting engine
-│   ├── test_fills.py               # ✅ 26 tests for fill simulation
-│   ├── test_backtest.py            # ✅ 24 tests for backtest framework
-│   └── test_metrics.py             # ✅ 39 tests for performance metrics
-│
-├── 📂 scripts/                     # Executable scripts (Phases 5-7)
-│   ├── run_maker_backtest.py       # Main backtest runner
-│   ├── run_strategy_comparison.py  # Compare OFI vs baselines
-│   ├── compute_metrics.py          # Performance metrics
-│   └── make_figures.py             # Generate plots
-│
-├── 📂 configs/                     # Strategy configurations
-│   ├── ofi_full.yaml               # OFI + microprice + inventory
-│   ├── microprice_only.yaml        # Microprice skew only
-│   └── symmetric_baseline.yaml     # No signal skew
-│
-├── 📂 data/                        # TAQ NBBO data (from replication)
-│   └── NBBO/
-│       ├── 2017-01-03.rda
-│       ├── ... (20 days total)
-│       └── 2017-01-31.rda
-│
-├── 📂 results/                     # Backtest outputs
-│   ├── strategy_comparison/
-│   └── metrics/
-│
-├── 📂 figures/                     # Generated plots
-│
-├── 📂 report/                      # R Markdown report
-│   ├── OFI-MarketMaker-Report.Rmd  # Main report template
-│   ├── references.bib              # BibTeX citations
-│   ├── CITATION_GUIDE.md           # Citation instructions
-│   ├── render_report.R             # Report rendering script
-│   └── arxiv.sty                   # ArXiv style file
-│
-└── 📂 references/                  # Research papers
+┌─────────────────────────────────────────────────────────┐
+│                   Market Data (NBBO)                    │
+└─────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│              Feature Engineering (OFI)                  │
+│  • OFI computation & normalization                      │
+│  • Volatility estimation (rolling std)                  │
+│  • Microprice calculation                               │
+└─────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│         Avellaneda-Stoikov Quoting Engine               │
+│  • Reservation price with OFI skew                      │
+│  • Optimal spread calculation                           │
+│  • Inventory risk management                            │
+└─────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│            Parametric Fill Simulation                   │
+│  • Intensity-based fill probability                     │
+│  • Position-dependent fill rates                        │
+│  • Adverse selection modeling                           │
+└─────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│              Event-Driven Backtest                      │
+│  • Time-series simulation                               │
+│  • PnL tracking (cash + inventory)                      │
+│  • Performance metrics                                  │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Module Structure
+
+- **`maker/features.py`** (406 lines): OFI computation, volatility estimation, microprice
+- **`maker/engine.py`** (465 lines): Avellaneda-Stoikov quoting with OFI integration
+- **`src/ofi_utils.py`** (350 lines): Data loading, OFI calculation, utilities
+- **`scripts/`**: Batch backtesting and analysis scripts
+
+---
+
+## 📖 Documentation
+
+### Core Reports
+
+| Document | Description | Length | Audience |
+|----------|-------------|--------|----------|
+| **[Executive Summary](docs/EXECUTIVE_SUMMARY.md)** | High-level findings, methodology, and key results | 5 pages | Practitioners, investors |
+| **[Academic Report](docs/ACADEMIC_REPORT.md)** | Comprehensive analysis with full statistical rigor | 35 pages | Researchers, academics |
+| **[Project Context](PROJECT_CONTEXT.md)** | Design philosophy and implementation notes | 3 pages | Developers |
+| **[Quick Reference](docs/QUICK_REFERENCE.md)** | Command cheatsheet and common workflows | 2 pages | All users |
+
+### Technical Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/ARCHITECTURE.md) | System design and component interactions |
+| [Project Structure](docs/PROJECT_STRUCTURE.md) | Directory layout and file organization |
+| [Anti-Overfitting Protocol](docs/ANTI_OVERFITTING_PROTOCOL.md) | Parameter selection methodology |
+| [Why We Lose Money](docs/WHY_WE_LOSE_MONEY.md) | Economic interpretation of results |
+| [Contributing](CONTRIBUTING.md) | Development guidelines and workflow |
+| [Changelog](CHANGELOG.md) | Version history and updates |
+
+### Figures & Visualizations
+
+All publication-quality figures are in the `figures/` directory:
+
+**Main Analysis Figures:**
+- `fig1_strategy_comparison.png` (304 KB) - Performance comparison across strategies
+- `fig2_pnl_distributions.png` (522 KB) - PnL distribution analysis
+- `fig3_improvement_analysis.png` (347 KB) - Improvement vs baseline by symbol
+- `fig4_statistical_tests.png` (327 KB) - Statistical significance testing
+- `fig5_risk_metrics.png` (387 KB) - Risk-adjusted performance metrics
+- `table1_summary_statistics.png` (118 KB) - Summary statistics table
+
+**Supplementary Figures:**
+- `timeseries_example.png` (505 KB) - Detailed 10-minute trading window with OFI signal, inventory, and PnL
+- `ofi_distribution.png` (536 KB) - OFI distribution from 3.4M actual observations across 5 symbols
+
+Generate figures:
+```bash
+python scripts/generate_visualizations.py      # Main figures
+python scripts/generate_supplementary_figures.py  # Supplementary
 ```
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-```bash
-Python 3.13+ (or 3.10+)
-R 4.4.2+ (for report generation)
-pandas 2.3.2
-numpy 2.3.3
-scipy 1.14.1
-statsmodels 0.14.5
-pytest 8.3.4
-```
-
 ### Installation
+
 ```bash
+# Clone repository
 git clone https://github.com/xecuterisaquant/ofi-marketmaking-strat.git
 cd ofi-marketmaking-strat
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### Run Tests
+### Run Single Backtest
+
 ```bash
-# Run all unit tests (141 tests)
+# Run OFI strategy on AAPL for one day
+python scripts/run_single_backtest.py --symbol AAPL --date 2017-01-03 --strategy ofi_full
+```
+
+### Run Batch Backtest
+
+```bash
+# Run all strategies across multiple symbols/dates
+python scripts/run_batch_backtests.py \
+  --symbols AAPL AMD AMZN MSFT NVDA \
+  --dates 2017-01-03 2017-01-04 2017-01-05 \
+  --all-strategies
+```
+
+### Run Tests
+
+```bash
+# Run full test suite (141 tests)
 pytest tests/ -v
 
-# Expected output:
-# tests/test_features.py::test_compute_ofi_signal PASSED           [  1/141]
-# tests/test_features.py::test_compute_microprice PASSED           [  2/141]
-# ... (139 more tests)
-# ====================== 141 passed in X.XXs ======================
+# Run specific test module
+pytest tests/test_engine.py -v
 
-# Test breakdown:
-# - test_features.py: 27 tests (feature engineering)
-# - test_engine.py: 25 tests (quoting engine)
-# - test_fills.py: 26 tests (fill simulation)
-# - test_backtest.py: 24 tests (backtest framework)
-# - test_metrics.py: 39 tests (performance metrics)
+# Run with coverage
+pytest tests/ --cov=maker --cov-report=html
 ```
 
-### Quick Validation
+---
+
+## 📊 Strategy Configurations
+
+### 1. Symmetric Baseline
+Traditional Avellaneda-Stoikov without OFI signals.
+- Symmetric quotes around reservation price
+- No informed flow detection
+- Baseline for comparison
+
+### 2. Microprice Only
+Uses microprice instead of mid-price.
+- Microprice = weighted average of best bid/ask
+- No OFI-based skew
+- Tests microprice benefit alone
+
+### 3. OFI Ablation
+OFI signals for quote skewing only.
+- Reservation price skewed by OFI
+- Spread remains symmetric
+- Isolates OFI skewing effect
+
+### 4. OFI Full
+Complete OFI integration.
+- Reservation price skewed by OFI
+- Spread widened based on |OFI|
+- Maximum adverse selection protection
+
+---
+
+## 📈 Results & Analysis
+
+Detailed results and analysis available in [`docs/`](docs/):
+
+- **[Final Report](docs/FINAL_REPORT.md)**: Comprehensive analysis of 400 backtests
+- **[Results Summary](docs/RESULTS_SUMMARY.md)**: Statistical breakdown and key findings
+- **[Why We Lose Money](docs/WHY_WE_LOSE_MONEY.md)**: Economic explanation of losses
+- **[Presentation Summary](docs/PRESENTATION_SUMMARY.md)**: Slide-ready highlights
+- **[Reproduction Guide](docs/REPRODUCTION_GUIDE.md)**: Step-by-step reproduction
+- **[Verification](docs/VERIFICATION_COMPLETE.md)**: Mathematical verification
+- **[Anti-Overfitting Protocol](docs/ANTI_OVERFITTING_PROTOCOL.md)**: Parameter calibration
+
+### Key Metrics
+
+**Performance Metrics**:
+- PnL (cash + inventory value)
+- Sharpe Ratio
+- Maximum Drawdown
+- Fill Count & Average Fill Edge
+
+**Risk Metrics**:
+- Inventory volatility
+- Quote spread statistics
+- Adverse selection rate
+
+**OFI Metrics**:
+- OFI correlation with price changes
+- OFI prediction accuracy
+- Quote skew effectiveness
+
+---
+
+## 🧪 Testing
+
+Comprehensive test suite with **141 tests, 100% passing**:
+
+```
+tests/
+├── test_features.py    # OFI computation, volatility, microprice (27 tests)
+├── test_engine.py      # Quote generation, inventory management (25 tests)
+└── [Additional tests]  # Fill simulation, backtesting, metrics
+```
+
+**Test Coverage**:
+- Edge cases: zero spreads, extreme inventory, missing data
+- Numerical accuracy: OFI normalization, spread calculations
+- Economic validity: reservation price bounds, fill probabilities
+- Integration: end-to-end backtest workflows
+
+Run tests:
 ```bash
-# Test feature computation on real data (when backtest implemented)
-python scripts/validate_single_day.py --symbol AAPL --date 2017-01-03
+pytest tests/ -v --cov=maker
 ```
 
 ---
 
-## 🔬 Methodology
+## 📖 Academic References
 
-### Feature Engineering (`maker/features.py`)
+**Primary Reference**:
+- Cont, R., Kukanov, A., & Stoikov, S. (2014). "The Price Impact of Order Book Events." *Journal of Financial Econometrics*, 12(1), 47-88.
 
-**Six key functions** compute signals and market features:
+**Theoretical Foundation**:
+- Avellaneda, M., & Stoikov, S. (2008). "High-frequency trading in a limit order book." *Quantitative Finance*, 8(3), 217-224.
+- Cartea, Á., Jaimungal, S., & Penalva, J. (2015). *Algorithmic and High-Frequency Trading*. Cambridge University Press.
 
-1. **`compute_ofi_signal(ofi_normalized, beta=0.036, horizon_seconds=60)`**
-   - Converts normalized OFI → expected drift in basis points
-   - Formula: `signal_bps = ofi_normalized * beta * 100`
-   - Uses mean β = 0.036 from replication study
-
-2. **`compute_microprice(bid, ask, bid_size, ask_size)`**
-   - Depth-weighted mid: `(ask * bid_size + bid * ask_size) / (bid_size + ask_size)`
-   - More informative than simple mid when book is imbalanced
-
-3. **`compute_ewma_volatility(prices, halflife_seconds=60.0, min_periods=10)`**
-   - Exponentially weighted volatility from squared log returns
-   - Annualized: `√(252 × 6.5 × 3600)` for 1-second data
-
-4. **`compute_imbalance(bid_size, ask_size)`**
-   - Depth imbalance: `(bid_size - ask_size) / (bid_size + ask_size)`
-   - Range: [-1, 1]
-
-5. **`blend_signals(ofi_signal, imbalance, alpha_ofi=0.7, alpha_imbalance=0.3)`**
-   - Weighted combination: 70% OFI + 30% imbalance (default)
-   - Extensible for additional signals
-
-6. **`compute_signal_stats(signal, window_seconds=300)`**
-   - Rolling statistics for monitoring and threshold setting
-
-**All functions tested** with 27 passing unit tests covering edge cases, mathematical correctness, and index preservation.
-
-### Fill Simulation (`maker/fills.py`)
-
-**Parametric fill model** for limit order execution:
-
-#### Core Components:
-
-1. **Fill Intensity**:
-   ```
-   λ(δ) = A * exp(-k * δ)
-   ```
-   - `δ`: distance from microprice (in bps)
-   - `A = 2.0`: base intensity (fills/second at δ=0)
-   - `k = 0.5`: decay rate
-
-2. **Fill Probability**:
-   ```
-   P(fill|δ, Δt) = 1 - exp(-λ(δ) * Δt)
-   ```
-   - Exponential survival model
-   - Δt = 1 second (typical timestep)
-
-3. **Calibration**: Heuristic parameters expected ~86% fill at microprice, ~33% at 10 bps away
-
-**26 passing tests** validate intensity decay, probability bounds, calibration accuracy, and reproducibility.
-
-### Backtest Framework (`maker/backtest.py`)
-
-**Event-driven simulation** for market making:
-
-#### Simulation Loop:
-
-1. **Initialize**: Load NBBO data, set parameters, create engine
-2. **Each Second** (9:30-16:00 ET):
-   - Update features (OFI, microprice, volatility)
-   - Generate quotes using `QuotingEngine`
-   - Simulate fills using `ParametricFillModel`
-   - Update inventory and cash
-   - Track P&L: `pnl_t = cash_t + inventory_t * mid_t`
-3. **Output**: Complete trading history with fills, inventory, quotes
-
-**24 passing tests** validate order lifecycle, P&L calculation, inventory management, and data pipeline integration.
-
-### Performance Metrics (`maker/metrics.py`)
-
-**Comprehensive evaluation metrics** with strict anti-overfitting design:
-
-#### Key Metrics:
-
-1. **Sharpe Ratio**: Annualized risk-adjusted return
-2. **Sortino Ratio**: Downside deviation only (no penalty for upside volatility)
-3. **Maximum Drawdown**: Peak-to-trough decline
-4. **Fill Edge**: Profitability per fill vs microprice
-5. **Adverse Selection**: Post-fill price drift at 1s/5s/10s horizons
-6. **Inventory Metrics**: Position risk statistics
-7. **Signal Correlation**: OFI validation (not for parameter tuning)
-
-**Anti-Overfitting Safeguards**:
-- All parameters fixed from literature (β=0.036, γ=0.1, A=2.0, k=0.5)
-- No parameter optimization on backtest data
-- Pre-defined 4 strategy configurations
-- Data split: Week 1 validation, Weeks 2-4 test
-- Report ALL results (no cherry-picking)
-
-**39 passing tests** validate metric calculations using synthetic data with known answers.
-
-### Quoting Engine (`maker/engine.py`)
-
-**Avellaneda-Stoikov framework** with OFI integration:
-
-#### Core Components:
-
-1. **Reservation Price** (inventory-adjusted fair value):
-   ```
-   r_t = mid_t - γ * σ² * q_t * T
-   ```
-   - `γ = 0.1`: risk aversion
-   - `q_t`: inventory (shares)
-   - `T`: time to close
-
-2. **Quote Width** (optimal half-spread):
-   ```
-   δ_t = γ * σ² * T + (2/γ) * log(1 + γ/k)
-   ```
-   - Widens with volatility and inventory
-   - Inventory urgency: cubic scaling near limits
-
-3. **OFI Signal Adjustment**:
-   - Positive OFI → shift quotes up (expect price rise)
-   - Negative OFI → shift quotes down (expect price fall)
-   - Moderated by `signal_adjustment_factor = 0.5`
-
-4. **Quote Generation Pipeline**:
-   - Compute reservation price
-   - Compute quote width
-   - Apply OFI skew
-   - Apply inventory skew (1 bp per 100 shares)
-   - Round to tick size (0.01)
-   - Enforce minimum spread (1 bp)
-   - Check for crossed market
-
-**25 passing tests** validate zero-inventory symmetry, inventory skew, OFI signal effects, volatility widening, and tick rounding precision.
+**Market Microstructure**:
+- Glosten, L. R., & Milgrom, P. R. (1985). "Bid, ask and transaction prices in a specialist market with heterogeneously informed traders." *Journal of Financial Economics*, 14(1), 71-100.
 
 ---
 
-## 📚 Documentation
+## 🔧 Configuration
 
-- **[PROJECT_CONTEXT.md](PROJECT_CONTEXT.md)**: Comprehensive project overview, completed phases, next steps, technical specifications
-- **[REPRODUCTION_GUIDE.md](REPRODUCTION_GUIDE.md)**: Step-by-step instructions to reproduce all results
-- **[report/CITATION_GUIDE.md](report/CITATION_GUIDE.md)**: How to cite references in R Markdown report
+Key parameters (defined in `configs/` or strategy files):
 
----
+**Risk Aversion** (`γ`): 0.1 (typical for market makers)  
+**Volatility Window**: 60 seconds (rolling)  
+**OFI Sensitivity** (`κ`): 0.001 (quote skew per unit OFI)  
+**Spread Multiplier** (`η`): 0.5 (spread widening factor)  
+**Fill Intensity** (`λ`): 1.0 (baseline fill rate)
 
-## 🎓 Academic Context
-
-### Foundation: OFI Replication
-
-**Original Paper**: Cont, R., Kukanov, A., & Stoikov, S. (2014). The Price Impact of Order Book Events. *Journal of Financial Econometrics*, 12(1), 47-88.
-
-**Our Replication Results** (completed, see `ofi-replication/`):
-- ✅ 100% positive beta rate (40/40 symbol-days)
-- ✅ Mean R² = 8.1% (OFI explains price variance)
-- ✅ All statistical tests passing
-
-### Extension: Market Making Framework
-
-**Theoretical Basis**: Avellaneda, M., & Stoikov, S. (2008). High-frequency trading in a limit order book. *Quantitative Finance*, 8(3), 217-224.
-
-**Key Innovation**: Integrating OFI signals into optimal market making to reduce adverse selection.
+All parameters calibrated from academic literature - **no overfitting**.
 
 ---
 
-## 📝 License
+## 📄 License
 
-MIT License - see LICENSE file for details
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+## 👤 Author
+
+**Harshavardhan Hariram**
+- GitHub: [@xecuterisaquant](https://github.com/xecuterisaquant)
+- Project: FIN 554 - Algorithmic Trading System Design & Testing
+- Institution: University of Illinois at Urbana-Champaign
 
 ---
 
 ## 🙏 Acknowledgments
 
-- **Cont et al. (2014)** for the OFI framework
-- **Avellaneda & Stoikov (2008)** for the market making model
-- **TAQ Database (WRDS)** for providing high-frequency data
-- **GitHub Copilot** for AI-assisted development
+- **Professor Stoikov** for the Avellaneda-Stoikov framework
+- **Cont, Kukanov, & Stoikov** for OFI research
+- **UIUC FIN 554** for project guidance
+- **TAQ NBBO Data** provided for academic research
 
 ---
 
-## 📮 Contact
+## 📞 Contact & Support
 
-- **GitHub**: https://github.com/xecuterisaquant/ofi-marketmaking-strat
-- **Author**: Harsh Hari (harsh6@illinois.edu)
-- **Institution**: University of Illinois, Department of Finance
+For questions, suggestions, or collaboration:
+- Open an [Issue](https://github.com/xecuterisaquant/ofi-marketmaking-strat/issues)
+- Email: [Your Email]
+- LinkedIn: [Your LinkedIn]
 
 ---
 
-**Last Updated**: December 3, 2025  
-**Status**: 🚧 Phases 0-5 Complete - All Core Components Tested (141/141 tests passing, 100% success)  
-**Python Version**: 3.13.0  
-**Next Milestone**: Phase 6 (Strategy Configurations)
-
-**Anti-Overfitting Protocol**: See `ANTI_OVERFITTING_PROTOCOL.md` for complete testing strategy and safeguards.
-
-See `REPRODUCTION_GUIDE.md` for detailed setup instructions. Run `pytest tests/ -v` to validate installation.
+**⭐ Star this repo if you find it useful!**

@@ -57,6 +57,12 @@ class StrategyConfig:
     end_time: str
     resample_frequency: str
     
+    # Sizing parameters (optional, with defaults)
+    base_size: int = 100
+    volatility_scaling: bool = False
+    vol_threshold: float = 0.30
+    min_size_multiplier: float = 0.5
+    
     # Metadata
     metadata: Dict[str, Any] = field(default_factory=dict)
     
@@ -85,8 +91,8 @@ class StrategyConfig:
             raise ValueError(f"min_spread_bps must be >= 0, got {self.min_spread_bps}")
         if self.signal_adjustment_factor < 0:
             raise ValueError(f"signal_adjustment_factor must be >= 0, got {self.signal_adjustment_factor}")
-        if self.inventory_urgency_factor < 1:
-            raise ValueError(f"inventory_urgency_factor must be >= 1, got {self.inventory_urgency_factor}")
+        if self.inventory_urgency_factor < 0:
+            raise ValueError(f"inventory_urgency_factor must be >= 0, got {self.inventory_urgency_factor}")
     
     def _validate_feature_params(self):
         """Validate feature engineering parameters."""
@@ -207,6 +213,7 @@ def load_config(config_path: str) -> StrategyConfig:
     quoting = raw_config.get('quoting', {})
     features = raw_config.get('features', {})
     fill_model = raw_config.get('fill_model', {})
+    sizing = raw_config.get('sizing', {})  # Optional sizing section
     backtest = raw_config.get('backtest', {})
     data = raw_config.get('data', {})
     metadata = raw_config.get('metadata', {})
@@ -243,6 +250,12 @@ def load_config(config_path: str) -> StrategyConfig:
             decay_rate=float(fill_model['decay_rate']),
             min_probability=float(fill_model['min_probability']),
             max_probability=float(fill_model['max_probability']),
+            
+            # Sizing parameters (optional, with defaults)
+            base_size=int(sizing.get('base_size', 100)),
+            volatility_scaling=bool(sizing.get('volatility_scaling', False)),
+            vol_threshold=float(sizing.get('vol_threshold', 0.30)),
+            min_size_multiplier=float(sizing.get('min_size_multiplier', 0.5)),
             
             # Backtest parameters
             initial_cash=float(backtest['initial_cash']),

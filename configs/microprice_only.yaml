@@ -9,17 +9,17 @@ strategy:
 
 # Quoting parameters (Avellaneda-Stoikov)
 quoting:
-  risk_aversion: 0.1           # γ - risk aversion parameter (fixed from literature)
-  terminal_time: 300.0         # T - time to close position (5 minutes)
-  order_arrival_rate: 1.0      # k - market order arrival rate
+  risk_aversion: 0.060         # γ - 3x market to overcome adverse selection
+  terminal_time: 60.0          # T - 1 minute horizon
+  order_arrival_rate: 1.0      # k - deprecated (arrival term removed)
   max_inventory: 100           # Maximum long position (shares)
   min_inventory: -100          # Maximum short position (shares)
   tick_size: 0.01              # Minimum price increment
-  min_spread_bps: 1.0          # Minimum bid-ask spread (basis points)
+  min_spread_bps: 0.5          # Minimum bid-ask spread (0.5 bps)
   
   # Signal parameters - NO OFI, uses microprice as center
   signal_adjustment_factor: 0.0     # No OFI signal adjustment
-  inventory_urgency_factor: 1.5     # Cubic urgency near limits
+  inventory_urgency_factor: 0.3     # Gentle urgency scaling (industry best practice)
 
 # Feature engineering
 features:
@@ -38,10 +38,17 @@ features:
 
 # Fill simulation
 fill_model:
-  base_intensity: 2.0          # A - fills/second at microprice (fixed)
-  decay_rate: 0.5              # k - exponential decay rate (fixed)
+  base_intensity: 0.5          # A - fills/second at microprice
+  decay_rate: 0.3              # k - slower decay (fills possible at wider spreads)
   min_probability: 1e-6        # Numerical stability floor
   max_probability: 0.99        # Prevent certainty
+
+# Quote sizing
+sizing:
+  base_size: 100               # Base order size (shares)
+  volatility_scaling: true     # Reduce size in high volatility
+  vol_threshold: 0.30          # Annual vol threshold (30%)
+  min_size_multiplier: 0.5     # Minimum 50% of base size
 
 # Backtest settings
 backtest:

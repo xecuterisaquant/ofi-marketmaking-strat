@@ -23,26 +23,42 @@ sys.path.insert(0, str(project_root))
 from maker.config import load_config
 from maker.engine import QuotingEngine, QuotingParams, QuoteState
 from maker.fills import ParametricFillModel
-from maker.backtest import BacktestEngine, BacktestConfig, load_nbbo_day
+from maker.backtest import BacktestEngine, BacktestConfig
 from maker.metrics import compute_all_metrics
 
 
 def load_data_for_symbol_date(symbol: str, date: str, data_dir: str = "data"):
-    """Helper to load NBBO data for a specific symbol-date."""
+    """
+    Load NBBO data for a specific symbol-date.
+    
+    Uses the fixed loading approach that filters BEFORE resampling
+    to avoid mixing multiple symbols.
+    """
+    from src.ofi_utils import read_rda, resolve_columns, parse_trading_day_from_filename, build_tob_series_1s
+    
     # Construct file path: data/NBBO/{date}.rda
     file_path = Path(data_dir) / "NBBO" / f"{date}.rda"
     
     if not file_path.exists():
         raise FileNotFoundError(f"Data file not found: {file_path}")
     
-    # Load data
-    nbbo_df, trading_day = load_nbbo_day(str(file_path))
+    # Load raw RDA file using ofi_utils
+    df_raw = read_rda(str(file_path))
     
-    # Filter to requested symbol (data contains multiple symbols)
-    if 'symbol' in nbbo_df.columns:
-        nbbo_df = nbbo_df[nbbo_df['symbol'] == symbol].copy()
-    elif 'sym_root' in nbbo_df.columns:
-        nbbo_df = nbbo_df[nbbo_df['sym_root'] == symbol].copy()
+    # Get column mapping (pass DataFrame, not list)
+    cmap = resolve_columns(df_raw)
+    
+    # Extract trading day
+    trading_day = parse_trading_day_from_filename(file_path.name)
+    
+    # Filter to specific symbol BEFORE resampling
+    if symbol not in df_raw['sym_root'].values:
+        raise ValueError(f"Symbol {symbol} not found in {file_path}")
+    
+    df_symbol = df_raw[df_raw['sym_root'] == symbol].copy()
+    
+    # Build 1-second NBBO series for this symbol only
+    nbbo_df = build_tob_series_1s(df_symbol, cmap, trading_day, freq='1s')
     
     return nbbo_df
 
@@ -214,7 +230,11 @@ def run_batch_backtests(symbols: list, dates: list, config_paths: list,
                         if result is not None:
                             results.append(result)
                     except Exception as e:
-                        print(f"\n[ERROR] {symbol} {date} {config_name}: {e}")
+                        import traceback
+                        print(f"\n[ERROR] {symbol} {date} {config_name}:")
+                        print(f"  {type(e).__name__}: {str(e)}")
+                        if verbose:
+                            traceback.print_exc()
                     
                     pbar.update(1)
     
