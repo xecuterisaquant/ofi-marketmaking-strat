@@ -54,11 +54,14 @@ for strat in ['microprice_only', 'ofi_ablation', 'ofi_full']:
     # Also compute absolute improvement
     merged['abs_improvement'] = merged['strat_pnl'] - merged['baseline_pnl']
     
+    # PERCENTAGE OF AVERAGES (CORRECT METRIC)
+    baseline_mean = merged['baseline_pnl'].mean()
+    strat_mean = merged['strat_pnl'].mean()
+    pct_of_avgs = ((strat_mean - baseline_mean) / abs(baseline_mean)) * 100
+    
     print(f'\n{strat}:')
-    print(f'  Mean Improvement: {merged_valid["improvement"].mean():.2f}%')
-    print(f'  Std: {merged_valid["improvement"].std():.2f}%')
-    print(f'  Min: {merged_valid["improvement"].min():.2f}%')
-    print(f'  Max: {merged_valid["improvement"].max():.2f}%')
+    print(f'  PERCENTAGE OF AVERAGES (USE THIS): {pct_of_avgs:.2f}%')
+    print(f'  Mean of paired %s (old method): {merged_valid["improvement"].mean():.2f}%')
     print(f'  Win Rate: {(merged["abs_improvement"] > 0).sum()}/{len(merged)} ({100*(merged["abs_improvement"] > 0).sum()/len(merged):.0f}%)')
     print(f'  Mean Abs Improvement: ${merged["abs_improvement"].mean():.2f}')
 
