@@ -82,8 +82,8 @@ def load_batch_results(results_dir: Path = Path('results/batch')) -> pd.DataFram
         returns = df_run['pnl'].diff().fillna(0)
         sharpe = (returns.mean() / returns.std() * np.sqrt(252 * 6.5 * 3600)) if returns.std() > 0 else 0
         
-        # Fill edge calculation (set to 0 for now - proper calculation requires fill details)
-        avg_fill_edge = 0
+        # Calculate PnL volatility
+        pnl_std = df_run['pnl'].std()
             
         summary = {
             'symbol': symbol,
@@ -94,8 +94,7 @@ def load_batch_results(results_dir: Path = Path('results/batch')) -> pd.DataFram
             'sharpe_ratio': sharpe,
             'max_inventory': df_run['inventory'].max() if 'inventory' in df_run.columns else 0,
             'min_inventory': df_run['inventory'].min() if 'inventory' in df_run.columns else 0,
-            'avg_fill_edge_bps': avg_fill_edge,
-            'fill_edge_std_bps': 0,  # Placeholder
+            'pnl_volatility': pnl_std,
             'max_drawdown': (df_run['pnl'] - df_run['pnl'].cummax()).min(),
             'total_return': total_pnl,
         }
@@ -162,15 +161,15 @@ def plot_strategy_comparison(df: pd.DataFrame, save_dir: Path):
     ax.grid(True, alpha=0.3)
     ax.tick_params(axis='x', rotation=15)
     
-    # 1d. Average Fill Edge
+    # 1d. PnL Volatility (Risk)
     ax = axes[1, 1]
-    spread_data = [df[df['strategy'] == s]['avg_fill_edge_bps'].values for s in strategies]
-    bp = ax.boxplot(spread_data, labels=strategies, patch_artist=True)
+    volatility_data = [df[df['strategy'] == s]['pnl_volatility'].values for s in strategies]
+    bp = ax.boxplot(volatility_data, labels=strategies, patch_artist=True)
     for patch, color in zip(bp['boxes'], colors):
         patch.set_facecolor(color)
     
-    ax.set_ylabel('Average Fill Edge (bps)', fontweight='bold')
-    ax.set_title('(d) Fill Quality', fontweight='bold')
+    ax.set_ylabel('PnL Std Dev ($)', fontweight='bold')
+    ax.set_title('(d) PnL Volatility', fontweight='bold')
     ax.grid(True, alpha=0.3)
     ax.tick_params(axis='x', rotation=15)
     

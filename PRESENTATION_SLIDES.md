@@ -242,9 +242,9 @@ If |OFI| > 1σ: spread = 1.5 × base_spread
 - **(a) PnL Distribution**: OFI strategies cluster around -$1,234 to -$1,321 vs baseline -$3,352
 - **(b) Risk-Adjusted Performance**: Similar Sharpe ratios but 63% lower volatility
 - **(c) Trading Activity**: OFI reduces fills by 65-71% (274-226 vs 772 fills)
-- **(d) Fill Quality**: Better execution when we do trade
+- **(d) PnL Volatility**: OFI strategies show ~$2,400 volatility vs ~$6,400 baseline (63% reduction)
 
-**Takeaway:** OFI strategies achieve dramatic loss reduction through selective trading ✅
+**Takeaway:** OFI strategies achieve dramatic loss reduction through selective trading and lower risk ✅
 
 ---
 

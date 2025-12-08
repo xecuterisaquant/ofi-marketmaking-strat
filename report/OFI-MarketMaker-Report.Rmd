@@ -620,17 +620,9 @@ We conducted 400 backtests across 5 symbols (AAPL, AMD, AMZN, MSFT, NVDA), 20 tr
 4. **Absolute Improvement**: +$2,118/run improvement over baseline
 5. **Economic Interpretation**: Absolute losses are expected in academic simulations without exchange rebates (~$68/run) and sub-millisecond latency. The **$2,118 absolute improvement** validates OFI's effectiveness at reducing adverse selection.
 
-```{r fig1, echo=FALSE, fig.cap="Performance comparison across strategies showing PnL, Sharpe ratio, fill count, and fill edge distributions. OFI strategies show superior performance across all metrics.", out.width='75%', fig.align='center'}
-knitr::include_graphics("../figures/fig1_strategy_comparison.png")
-```
-
 ### Risk-Adjusted Performance
 
-OFI strategies demonstrate superior risk-adjusted performance across multiple metrics including Sharpe ratio, maximum drawdown, and information ratio.
-
-```{r fig2, echo=FALSE, fig.cap="Risk-adjusted performance analysis. OFI strategies demonstrate better Sharpe ratios, lower maximum drawdown, and improved risk-return profiles.", out.width='75%', fig.align='center'}
-knitr::include_graphics("../figures/fig5_risk_metrics.png")
-```
+OFI strategies demonstrate superior risk-adjusted performance across multiple metrics including Sharpe ratio, maximum drawdown, and information ratio (see Figure 1 and Figure 2 in Appendix).
 
 ## Symbol-Level Analysis
 
@@ -644,9 +636,7 @@ Performance improvements are consistent across all tested securities (OFI Ablati
 | AMD | +29.5% | 55% | Variable performance |
 | NVDA | +2.0% | 70% | Lowest improvement |
 
-```{r fig3, echo=FALSE, fig.cap="Symbol-level improvement analysis showing consistent OFI benefits across market caps and sectors.", out.width='75%', fig.align='center'}
-knitr::include_graphics("../figures/fig3_improvement_analysis.png")
-```
+See Figure 3 in Appendix for detailed symbol-level improvement analysis.
 
 ### Mechanism Analysis
 
@@ -661,9 +651,7 @@ Breaking down how OFI achieves improvement:
 
 **3. Win Rate**: 72% of all 100 backtests show positive improvement over baseline.
 
-```{r fig4, echo=FALSE, fig.cap="Statistical significance testing showing t-tests, Cohen's d effect sizes, confidence intervals, and Wilcoxon signed-rank tests. All comparisons favor OFI strategies with high statistical confidence.", out.width='75%', fig.align='center'}
-knitr::include_graphics("../figures/fig4_statistical_tests.png")
-```
+See Appendix for all visualizations and statistical significance testing.
 
 \clearpage
 
@@ -811,6 +799,34 @@ This project benefited from AI assistance provided by GitHub Copilot [@GitHubCop
 I acknowledge @Cont2014 for the OFI framework and @AvellanedaStoikov2008 for the market making model.
 
 **Code Availability**: \url{https://github.com/xecuterisaquant/ofi-marketmaking-strat}
+
+\newpage
+
+# Appendix: Visualizations
+
+This appendix contains all figures referenced in the Results section.
+
+```{r fig1, echo=FALSE, fig.cap="Performance comparison across strategies showing PnL, Sharpe ratio, fill count, and PnL volatility distributions. OFI strategies show superior performance across all metrics.", out.width='100%', fig.align='center'}
+knitr::include_graphics("../figures/fig1_strategy_comparison.png")
+```
+
+\clearpage
+
+```{r fig2, echo=FALSE, fig.cap="Risk-adjusted performance analysis. OFI strategies demonstrate better Sharpe ratios, lower maximum drawdown, and improved risk-return profiles.", out.width='100%', fig.align='center'}
+knitr::include_graphics("../figures/fig5_risk_metrics.png")
+```
+
+\clearpage
+
+```{r fig3, echo=FALSE, fig.cap="Symbol-level improvement analysis showing consistent OFI benefits across market caps and sectors.", out.width='100%', fig.align='center'}
+knitr::include_graphics("../figures/fig3_improvement_analysis.png")
+```
+
+\clearpage
+
+```{r fig4, echo=FALSE, fig.cap="Statistical significance testing showing t-tests, Cohen's d effect sizes, confidence intervals, and Wilcoxon signed-rank tests. All comparisons favor OFI strategies with high statistical confidence.", out.width='100%', fig.align='center'}
+knitr::include_graphics("../figures/fig4_statistical_tests.png")
+```
 
 \newpage
 
