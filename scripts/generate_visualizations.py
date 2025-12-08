@@ -35,16 +35,81 @@ plt.rcParams['figure.titlesize'] = 13
 
 
 def load_batch_results(results_dir: Path = Path('results/batch')) -> pd.DataFrame:
-    """Load the most recent batch summary results."""
+    """Load batch summary from parquet files if CSV doesn't exist."""
+    # First try to load from CSV
     batch_files = list(results_dir.glob('batch_summary_*.csv'))
-    if not batch_files:
-        raise FileNotFoundError("No batch summary files found")
     
-    # Get most recent file
-    latest_file = max(batch_files, key=lambda x: x.stat().st_mtime)
-    print(f"Loading: {latest_file.name}")
+    if batch_files:
+        # Get most recent file
+        latest_file = max(batch_files, key=lambda x: x.stat().st_mtime)
+        df = pd.read_csv(latest_file)
+        
+        # Check if it has enough data
+        if len(df) >= 100:  # Should have ~400 for full dataset
+            print(f"Loading: {latest_file.name}")
+            return df
     
-    df = pd.read_csv(latest_file)
+    # If no CSV or insufficient data, load from parquets
+    print("Loading from parquet files...")
+    detailed_dir = Path('results/detailed')
+    parquet_files = list(detailed_dir.glob('*.parquet'))
+    
+    if not parquet_files:
+        raise FileNotFoundError("No parquet or batch summary files found")
+    
+    print(f"Found {len(parquet_files)} parquet files")
+    
+    # Extract summary metrics from each parquet
+    summaries = []
+    for pq_file in parquet_files:
+        # Parse filename: SYMBOL_DATE_STRATEGY.parquet
+        parts = pq_file.stem.split('_')
+        symbol = parts[0]
+        date = parts[1]
+        strategy = '_'.join(parts[2:])
+        
+        # Load parquet and compute metrics
+        df_run = pd.read_parquet(pq_file)
+        
+        if len(df_run) == 0:
+            continue
+        
+        # Calculate fills and metrics
+        fills = df_run[(df_run['our_bid'].notna() | df_run['our_ask'].notna()) & 
+                      (df_run['inventory'].diff() != 0)].copy()
+        
+        n_fills = len(fills)
+        total_pnl = df_run['pnl'].iloc[-1] if len(df_run) > 0 else 0
+        
+        # Calculate returns for Sharpe
+        returns = df_run['pnl'].diff().fillna(0)
+        sharpe = (returns.mean() / returns.std() * np.sqrt(252 * 6.5 * 3600)) if returns.std() > 0 else 0
+        
+        # Fill edge calculation (approximation)
+        if n_fills > 0:
+            avg_fill_edge = abs(fills['pnl'].diff().mean()) if 'pnl' in fills.columns else 0
+        else:
+            avg_fill_edge = 0
+            
+        summary = {
+            'symbol': symbol,
+            'date': date,
+            'strategy': strategy,
+            'total_pnl': total_pnl,
+            'total_fills': n_fills,
+            'sharpe_ratio': sharpe,
+            'max_inventory': df_run['inventory'].max() if 'inventory' in df_run.columns else 0,
+            'min_inventory': df_run['inventory'].min() if 'inventory' in df_run.columns else 0,
+            'avg_fill_edge_bps': avg_fill_edge,
+            'fill_edge_std_bps': 0,  # Placeholder
+            'max_drawdown': (df_run['pnl'] - df_run['pnl'].cummax()).min(),
+            'total_return': total_pnl,
+        }
+        summaries.append(summary)
+    
+    df = pd.DataFrame(summaries)
+    print(f"Loaded {len(df)} backtest results from parquets")
+    
     return df
 
 
@@ -220,9 +285,11 @@ def plot_improvement_analysis(df: pd.DataFrame, save_dir: Path):
                 
                 strat_pnl = strat_data['total_pnl'].values[0]
                 
-                # Calculate improvement (higher PnL = better)
+                # Calculate improvement (higher PnL = better, less negative = improvement)
+                # For losses: baseline=-3352, strat=-1234 → improvement = (strat - baseline) / |baseline| * 100
+                #           = (-1234 - (-3352)) / 3352 * 100 = 2118/3352 * 100 = +63.2%
                 if baseline_pnl != 0:
-                    improvement_pct = ((baseline_pnl - strat_pnl) / abs(baseline_pnl)) * 100
+                    improvement_pct = ((strat_pnl - baseline_pnl) / abs(baseline_pnl)) * 100
                 else:
                     improvement_pct = 0
                 
@@ -233,7 +300,7 @@ def plot_improvement_analysis(df: pd.DataFrame, save_dir: Path):
                     'baseline_pnl': baseline_pnl,
                     'strategy_pnl': strat_pnl,
                     'improvement_pct': improvement_pct,
-                    'absolute_improvement': baseline_pnl - strat_pnl
+                    'absolute_improvement': strat_pnl - baseline_pnl  # Positive = improvement
                 })
     
     imp_df = pd.DataFrame(improvements)
@@ -265,41 +332,85 @@ def plot_improvement_analysis(df: pd.DataFrame, save_dir: Path):
         ax.text(i+1, ax.get_ylim()[1]*0.9, f'μ={mean_imp:.1f}%', 
                ha='center', fontsize=8, fontweight='bold')
     
-    # 3b. Improvement by Symbol
+    # 3b. Improvement by Symbol - IMPROVED with grouped bars and better layout
     ax = axes[0, 1]
-    symbols = imp_df['symbol'].unique()
+    symbols = sorted(imp_df['symbol'].unique())
     x = np.arange(len(symbols))
     width = 0.25
     
-    for i, strategy in enumerate(strategies):
-        means = [imp_df[(imp_df['strategy'] == strategy) & 
-                       (imp_df['symbol'] == sym)]['improvement_pct'].mean() 
-                for sym in symbols]
-        ax.bar(x + i*width, means, width, label=strategy, color=colors[i], alpha=0.8)
+    # Calculate mean improvement per symbol per strategy
+    symbol_means = {}
+    for strategy in strategies:
+        means = []
+        for sym in symbols:
+            sym_data = imp_df[(imp_df['strategy'] == strategy) & (imp_df['symbol'] == sym)]
+            if len(sym_data) > 0:
+                means.append(sym_data['improvement_pct'].mean())
+            else:
+                means.append(0)
+        symbol_means[strategy] = means
+    
+    # Plot grouped bars
+    for i, (strategy, color) in enumerate(zip(strategies, colors)):
+        offset = (i - 1) * width  # Center the middle bar
+        bars = ax.bar(x + offset, symbol_means[strategy], width, 
+                     label=strategy.replace('_', ' ').title(), 
+                     color=color, alpha=0.85, edgecolor='black', linewidth=0.5)
+        
+        # Add value labels on bars
+        for bar in bars:
+            height = bar.get_height()
+            if abs(height) > 2:  # Only label if visible
+                ax.text(bar.get_x() + bar.get_width()/2., height,
+                       f'{height:.0f}%', ha='center', 
+                       va='bottom' if height > 0 else 'top',
+                       fontsize=7, fontweight='bold')
     
     ax.set_xlabel('Symbol', fontweight='bold')
     ax.set_ylabel('Mean Improvement (%)', fontweight='bold')
     ax.set_title('(b) Improvement by Symbol', fontweight='bold')
-    ax.set_xticks(x + width)
-    ax.set_xticklabels(symbols)
-    ax.legend(fontsize=7)
+    ax.set_xticks(x)
+    ax.set_xticklabels(symbols, fontweight='bold')
+    ax.legend(fontsize=7, loc='upper right')
     ax.axhline(y=0, color='red', linestyle='--', alpha=0.5, linewidth=1)
     ax.grid(True, alpha=0.3, axis='y')
     
-    # 3c. Scatter: Baseline PnL vs Improvement
+    # 3c. Scatter: Strategy PnL vs Improvement - IMPROVED with better visualization
     ax = axes[1, 0]
+    
+    # Create scatter with better separation and styling
     for strategy, color in zip(strategies, colors):
         data = imp_df[imp_df['strategy'] == strategy]
-        ax.scatter(data['baseline_pnl'], data['improvement_pct'], 
-                  alpha=0.6, s=30, label=strategy, color=color)
+        
+        # Add jitter to prevent overplotting
+        jitter_x = np.random.normal(0, 1, size=len(data))
+        jitter_y = np.random.normal(0, 0.5, size=len(data))
+        
+        ax.scatter(data['strategy_pnl'] + jitter_x, 
+                  data['improvement_pct'] + jitter_y, 
+                  alpha=0.5, s=40, label=strategy.replace('_', ' ').title(), 
+                  color=color, edgecolors='black', linewidth=0.3)
+        
+        # Add mean marker
+        mean_pnl = data['strategy_pnl'].mean()
+        mean_imp = data['improvement_pct'].mean()
+        ax.scatter(mean_pnl, mean_imp, s=200, color=color, 
+                  marker='*', edgecolors='black', linewidth=1.5, 
+                  zorder=10, label=f'{strategy} (mean)')
     
-    ax.set_xlabel('Baseline PnL ($)', fontweight='bold')
+    ax.set_xlabel('Strategy PnL ($)', fontweight='bold')
     ax.set_ylabel('Improvement (%)', fontweight='bold')
-    ax.set_title('(c) Improvement vs Baseline Loss', fontweight='bold')
-    ax.legend(fontsize=7)
+    ax.set_title('(c) Strategy Performance vs Improvement', fontweight='bold')
+    ax.legend(fontsize=6, loc='best', ncol=2)
     ax.axhline(y=0, color='red', linestyle='--', alpha=0.5, linewidth=1)
-    ax.axvline(x=0, color='red', linestyle='--', alpha=0.5, linewidth=1)
     ax.grid(True, alpha=0.3)
+    
+    # Add quadrant labels
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    ax.text(xlim[0] + (xlim[1]-xlim[0])*0.05, ylim[1]*0.9, 
+           'Better Performance\n& Improvement', 
+           fontsize=7, alpha=0.6, style='italic')
     
     # 3d. Win Rate (% of runs with positive improvement)
     ax = axes[1, 1]
