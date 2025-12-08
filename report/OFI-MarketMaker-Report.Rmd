@@ -653,8 +653,6 @@ Breaking down how OFI achieves improvement:
 
 See Appendix for all visualizations and statistical significance testing.
 
-\clearpage
-
 # Discussion
 
 ## OFI Mechanism and Adverse Selection Reduction
@@ -800,11 +798,11 @@ I acknowledge @Cont2014 for the OFI framework and @AvellanedaStoikov2008 for the
 
 **Code Availability**: \url{https://github.com/xecuterisaquant/ofi-marketmaking-strat}
 
-\newpage
-
 # Appendix: Visualizations
 
 This appendix contains all figures referenced in the Results section.
+
+\newpage
 
 ```{r fig1, echo=FALSE, fig.cap="Performance comparison across strategies showing PnL, Sharpe ratio, fill count, and PnL volatility distributions. OFI strategies show superior performance across all metrics.", out.width='100%', fig.align='center'}
 knitr::include_graphics("../figures/fig1_strategy_comparison.png")
