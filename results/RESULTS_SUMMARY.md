@@ -76,13 +76,11 @@
 
 | Symbol | Improvement vs Baseline | Win Rate | Notes |
 |--------|------------------------|----------|-------|
-| **AMZN** 🥇 | **+64.8%** | **20/20 (100%)** | Best performer - perfect win rate |
-| **AAPL** | **+50.8%** | **16/20 (80%)** | Consistent large-cap performance |
-| **NVDA** | **+22.3%** | **14/20 (70%)** | Volatile stock, still benefits |
-| **MSFT** | **+6.4%** | **11/20 (55%)** | Moderate improvement |
-| **AMD** | **+920.0%** | **11/20 (55%)** | Extreme outlier improvement* |
-
-*Note: AMD shows extreme percentage due to near-zero baseline losses on some days, creating large denominators. Absolute dollar improvements are consistent with other symbols.
+| **AMZN** 🥇 | **+65.1%** | **20/20 (100%)** | Best performer - perfect win rate |
+| **AAPL** | **+54.9%** | **16/20 (80%)** | Consistent large-cap performance |
+| **MSFT** | **+30.7%** | **11/20 (55%)** | Moderate improvement |
+| **AMD** | **+29.5%** | **11/20 (55%)** | Variable performance |
+| **NVDA** | **+2.0%** | **14/20 (70%)** | Lowest improvement |
 
 **Key Insight:** OFI strategy works across different market caps, sectors, and volatility regimes.
 
