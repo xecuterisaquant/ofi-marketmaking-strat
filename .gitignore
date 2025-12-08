@@ -65,16 +65,18 @@ ofi-replication/
 *.h5
 *.hdf5
 
-# Results (can be regenerated)
+# Results (can be regenerated, but keep summary)
 results/**/*.parquet
 results/**/*.csv
 results/**/*.json
 results/**/timeseries/
+!results/RESULTS_SUMMARY.txt
 
-# Figures (can be regenerated)
-figures/**/*.png
-figures/**/*.pdf
-figures/**/*.svg
+# Figures (tracked for easy access)
+# Uncommenting to include figures in repo
+# figures/**/*.png
+# figures/**/*.pdf
+# figures/**/*.svg
 
 # R specific
 .Rproj.user
