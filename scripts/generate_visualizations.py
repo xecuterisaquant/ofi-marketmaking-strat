@@ -74,22 +74,16 @@ def load_batch_results(results_dir: Path = Path('results/batch')) -> pd.DataFram
         if len(df_run) == 0:
             continue
         
-        # Calculate fills and metrics
-        fills = df_run[(df_run['our_bid'].notna() | df_run['our_ask'].notna()) & 
-                      (df_run['inventory'].diff() != 0)].copy()
-        
-        n_fills = len(fills)
+        # Calculate fills - count inventory changes only
+        n_fills = len(df_run[df_run['inventory'].diff() != 0])
         total_pnl = df_run['pnl'].iloc[-1] if len(df_run) > 0 else 0
         
         # Calculate returns for Sharpe
         returns = df_run['pnl'].diff().fillna(0)
         sharpe = (returns.mean() / returns.std() * np.sqrt(252 * 6.5 * 3600)) if returns.std() > 0 else 0
         
-        # Fill edge calculation (approximation)
-        if n_fills > 0:
-            avg_fill_edge = abs(fills['pnl'].diff().mean()) if 'pnl' in fills.columns else 0
-        else:
-            avg_fill_edge = 0
+        # Fill edge calculation (set to 0 for now - proper calculation requires fill details)
+        avg_fill_edge = 0
             
         summary = {
             'symbol': symbol,
