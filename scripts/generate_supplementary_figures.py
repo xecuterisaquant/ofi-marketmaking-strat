@@ -46,6 +46,48 @@ def load_example_data():
             print(f"[WARN] Warning: {path} not found, will skip time series plot")
             return None
     
+    # Load raw NBBO data to compute OFI signal
+    try:
+        import pyreadr
+        import sys
+        sys.path.insert(0, str(Path.cwd() / 'src'))
+        from ofi_utils import compute_ofi_depth_mid
+        
+        nbbo_file = Path('data/NBBO/2017-01-03.rda')
+        if nbbo_file.exists():
+            result = pyreadr.read_r(str(nbbo_file))
+            df_key = list(result.keys())[0]
+            nbbo_df = result[df_key]
+            
+            # Filter to AAPL
+            aapl_nbbo = nbbo_df[nbbo_df['sym_root'] == 'AAPL'].copy()
+            aapl_nbbo = aapl_nbbo[['best_bid', 'best_ask', 'best_bidsiz', 'best_asksiz']].copy()
+            aapl_nbbo.columns = ['bid', 'ask', 'bid_sz', 'ask_sz']
+            
+            # Compute OFI
+            ofi_df = compute_ofi_depth_mid(aapl_nbbo)
+            
+            # Normalize OFI using rolling window
+            window = 60
+            ofi_rolling = ofi_df['ofi'].rolling(window=window, min_periods=10).sum()
+            depth_rolling = (ofi_df['bid_sz'] + ofi_df['ask_sz']).rolling(window=window, min_periods=10).mean()
+            ofi_normalized = ofi_rolling / (depth_rolling + 1e-6)
+            
+            # Add to both baseline and ofi dataframes (same signal, different strategies)
+            data['baseline']['ofi_signal'] = ofi_normalized.values[:len(data['baseline'])]
+            data['ofi']['ofi_signal'] = ofi_normalized.values[:len(data['ofi'])]
+            
+            print(f"[OK] Computed OFI signal: {len(ofi_normalized)} points")
+        else:
+            print(f"[WARN] NBBO file not found, will use placeholder OFI signal")
+            data['baseline']['ofi_signal'] = 0
+            data['ofi']['ofi_signal'] = 0
+            
+    except Exception as e:
+        print(f"[WARN] Could not compute OFI signal: {e}")
+        data['baseline']['ofi_signal'] = 0
+        data['ofi']['ofi_signal'] = 0
+    
     return data
 
 def plot_time_series_example(data, output_dir='figures'):
@@ -111,12 +153,15 @@ def plot_time_series_example(data, output_dir='figures'):
     
     # Panel 2: OFI Signal
     ax2 = axes[1]
-    if 'ofi_normalized' in ofi.columns:
-        ofi_signal = ofi['ofi_normalized']
-    elif 'ofi' in ofi.columns:
-        # Normalize if raw OFI
-        ofi_signal = (ofi['ofi'] - ofi['ofi'].mean()) / ofi['ofi'].std()
+    
+    # Use the computed OFI signal
+    if 'ofi_signal' in ofi.columns:
+        ofi_signal = ofi['ofi_signal']
+        # Additional normalization for better visualization
+        if ofi_signal.std() > 0:
+            ofi_signal = (ofi_signal - ofi_signal.mean()) / ofi_signal.std()
     else:
+        print("[WARN] No OFI signal found, using zeros")
         ofi_signal = pd.Series(0, index=ofi.index)
     
     # Color-code by sign
