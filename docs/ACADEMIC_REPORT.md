@@ -603,9 +603,9 @@ Breaking down how OFI achieves improvement:
 
 3. **Combined Effect**:
 
-   $$
-   \Delta\text{PnL} = \underbrace{(\text{AS}_{\text{base}} - \text{AS}_{\text{OFI}}) \times N_{\text{fills,OFI}}}_{\text{Better fills}} + \underbrace{\text{AS}_{\text{base}} \times (N_{\text{fills,base}} - N_{\text{fills,OFI}})}_{\text{Avoided fills}}
-   $$
+$$
+\Delta\text{PnL} = \underbrace{(\text{AS}_{\text{base}} - \text{AS}_{\text{OFI}}) \times N_{\text{fills,OFI}}}_{\text{Better fills}} + \underbrace{\text{AS}_{\text{base}} \times (N_{\text{fills,base}} - N_{\text{fills,OFI}})}_{\text{Avoided fills}}
+$$
 
    - Better fills: +$120 per run
    - Avoided fills: +$1,998 per run
