@@ -522,7 +522,7 @@ H_0: \mu_{\text{OFI}} = \mu_{\text{baseline}} \quad \text{vs} \quad H_1: \mu_{\t
 $$
 
 Results:
-- Mean difference: $\Delta\bar{PnL} = +$2,118$
+- Mean difference: $\Delta\bar{PnL} =$ +$2,118
 - t-statistic: $t = 8.76$
 - **p-value: < 0.001** ✅✅✅
 - 95% CI: [$1,638, $2,598]
