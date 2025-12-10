@@ -93,14 +93,15 @@ Key insights:
 **Cont, Kukanov, & Stoikov (2014)** establish that OFI is a key driver of short-term price changes. They show:
 
 $$
-\Delta p_t = \beta \cdot \text{OFI}_t + \epsilon_t
+\Delta p_t = \beta \cdot \text{OFI}_t + \epsilon_t 
 $$
 
 With $R^2 \approx$ 8% at 1-second horizons and highly significant β coefficients across a large cross-section of stocks.
 
-**Definition**:
+**Definition**
+
 $$
-\text{OFI}_t = \sum_{i: t_{i-1} < t \leq t_i} e^i \left(\Delta b^i - \Delta a^i\right)
+\text{OFI}_t = \sum{i: t_{i-1} < t \leq t_i} e^i \left(\Delta b^i - \Delta a^i\right)
 $$
 
 Where:
@@ -195,6 +196,7 @@ Where $\eta$ = spread multiplier (calibrated to 0.5).
 **3.2.3 Quote Generation**
 
 Final quotes:
+
 $$
 \begin{align}
 p^{\text{bid}}_t &= r_t^{\text{OFI}} - \frac{\delta_t^{\text{OFI}}}{2} \\
@@ -287,10 +289,11 @@ Similarly for $e^{\text{ask}}_t$.
 **Step 2: Signed Volume Changes**
 
 $$
-\Delta b_t = e^{\text{bid}}_t \times |\Delta(\text{bid\_size})_t|
+\Delta b_t = e^{\text{bid}}_t \times |\Delta(\mathrm{bid\_size})_t|
 $$
+
 $$
-\Delta a_t = e^{\text{ask}}_t \times |\Delta(\text{ask\_size})_t|
+\Delta a_t = e^{\text{ask}}_t \times |\Delta(\mathrm{ask\_size})_t|
 $$
 
 **Step 3: OFI Aggregation**
@@ -519,7 +522,7 @@ H_0: \mu_{\text{OFI}} = \mu_{\text{baseline}} \quad \text{vs} \quad H_1: \mu_{\t
 $$
 
 Results:
-- Mean difference: $\Delta\bar{PnL} = +$2,118$
+- Mean difference: $\Delta\bar{PnL} =$ +$2,118
 - t-statistic: $t = 8.76$
 - **p-value: < 0.001** ✅✅✅
 - 95% CI: [$1,638, $2,598]
@@ -599,9 +602,10 @@ Breaking down how OFI achieves improvement:
    - **Reduction**: 54% fewer fills
 
 3. **Combined Effect**:
-   $$
-   \Delta\text{PnL} = \underbrace{(\text{AS}_{\text{base}} - \text{AS}_{\text{OFI}}) \times N_{\text{fills,OFI}}}_{\text{Better fills}} + \underbrace{\text{AS}_{\text{base}} \times (N_{\text{fills,base}} - N_{\text{fills,OFI}})}_{\text{Avoided fills}}
-   $$
+
+$$
+\Delta\text{PnL} = \underbrace{(\text{AS}_{\text{base}} - \text{AS}_{\text{OFI}}) \times N_{\text{fills,OFI}}}_{\text{Better fills}} + \underbrace{\text{AS}_{\text{base}} \times (N_{\text{fills,base}} - N_{\text{fills,OFI}})}_{\text{Avoided fills}}
+$$
 
    - Better fills: +$120 per run
    - Avoided fills: +$1,998 per run
@@ -661,7 +665,10 @@ While still negative (expected in absence of rebates), OFI strategies show bette
 Despite 60-63% improvement, absolute PnL remains negative. This is **expected and realistic** for several reasons:
 
 1. **Missing Exchange Rebates**: Real market makers earn ~0.25 bps per fill in rebates (Nasdaq, NYSE). This amounts to:
-   $$\text{Missing Revenue} = 127 \text{ fills} \times 0.25 \text{ bps} \times \$115 \approx \$18 \text{ per run}$$
+
+$$
+\text{Missing Revenue} = 127  \text{ fills} \times 0.25  \text { bps} \times \text{115} \approx 18  \text{ per run}
+$$
 
 2. **Latency Disadvantage**: Our 1-second updates are glacial compared to real HFT (microseconds). This costs ~$10-15 per run in adverse selection.
 
@@ -768,8 +775,8 @@ Tested η ∈ {0.25, 0.5, 1.0}:
 ### 8.4 Alternative Fill Models
 
 Tested fill model with:
-- **Linear decay**: $\lambda_t = \lambda_0 (1 - \alpha \cdot \text{price\_deviation})$
-- **Power law**: $\lambda_t = \lambda_0 (\text{price\_deviation})^{-\alpha}$
+- **Linear decay**: $\lambda_t = \lambda_0 (1 - \alpha \cdot \mathrm{price\_deviation})$
+- **Power law**: $\lambda_t = \lambda_0 (\mathrm{price\_deviation})^{-\alpha}$
 
 Results:
 
@@ -926,7 +933,7 @@ The complete codebase, data processing scripts, and documentation are available 
 The market maker's value function $H(s, x, q, t)$ satisfies:
 
 $$
-\frac{\partial H}{\partial t} + \sup_{\delta^{bid}, \delta^{ask}} \left\{ \lambda^{bid}(\delta^{bid})[H(s, x - s + \delta^{bid}, q+1, t) - H(s,x,q,t)] + \lambda^{ask}(\delta^{ask})[H(s, x + s + \delta^{ask}, q-1, t) - H(s,x,q,t)] \right\} = 0
+\frac{\partial H}{\partial t} + \sup_{\delta^{bid}, \delta^{ask}} \\{ \lambda^{bid}(\delta^{bid})[H(s, x - s + \delta^{bid}, q+1, t) - H(s,x,q,t)] + \lambda^{ask}(\delta^{ask})[H(s, x + s + \delta^{ask}, q-1, t) - H(s,x,q,t)] \\} = 0
 $$
 
 With terminal condition: $H(s,x,q,T) = x + qs - \alpha q^2$ (inventory penalty).

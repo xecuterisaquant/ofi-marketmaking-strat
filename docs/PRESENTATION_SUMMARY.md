@@ -144,9 +144,11 @@ $$\text{Signal}_t = \alpha \cdot \text{Signal}^{\text{OFI}}_t + (1-\alpha) \cdot
 Where $\alpha = 0.7$ (OFI weight)
 
 **2. Multi-window OFI** (5s, 10s, 30s):
+
 $$\text{OFI}_t = 0.5 \cdot \text{OFI}_{10s} + 0.3 \cdot \text{OFI}_{5s} + 0.2 \cdot \text{OFI}_{30s}$$
 
 **3. Volatility-adjusted spread:**
+
 $$\delta_t = \delta_t^{\text{base}} \cdot \left(1 + \eta \frac{\sigma_t}{\bar{\sigma}}\right)$$
 
 **Result:** +60.6% improvement ✅
