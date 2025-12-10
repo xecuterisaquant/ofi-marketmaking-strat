@@ -196,6 +196,7 @@ Where $\eta$ = spread multiplier (calibrated to 0.5).
 **3.2.3 Quote Generation**
 
 Final quotes:
+
 $$
 \begin{align}
 p^{\text{bid}}_t &= r_t^{\text{OFI}} - \frac{\delta_t^{\text{OFI}}}{2} \\
@@ -290,6 +291,7 @@ Similarly for $e^{\text{ask}}_t$.
 $$
 \Delta b_t = e^{\text{bid}}_t \times |\Delta(\text{bid\_size})_t|
 $$
+
 $$
 \Delta a_t = e^{\text{ask}}_t \times |\Delta(\text{ask\_size})_t|
 $$
@@ -600,6 +602,7 @@ Breaking down how OFI achieves improvement:
    - **Reduction**: 54% fewer fills
 
 3. **Combined Effect**:
+
    $$
    \Delta\text{PnL} = \underbrace{(\text{AS}_{\text{base}} - \text{AS}_{\text{OFI}}) \times N_{\text{fills,OFI}}}_{\text{Better fills}} + \underbrace{\text{AS}_{\text{base}} \times (N_{\text{fills,base}} - N_{\text{fills,OFI}})}_{\text{Avoided fills}}
    $$
@@ -662,7 +665,10 @@ While still negative (expected in absence of rebates), OFI strategies show bette
 Despite 60-63% improvement, absolute PnL remains negative. This is **expected and realistic** for several reasons:
 
 1. **Missing Exchange Rebates**: Real market makers earn ~0.25 bps per fill in rebates (Nasdaq, NYSE). This amounts to:
-   $$\text{Missing Revenue} = 127 \text{ fills} \times 0.25 \text{ bps} \times \$115 \approx \$18 \text{ per run}$$
+
+   $$
+   \text{Missing Revenue} = 127 \text{ fills} \times 0.25 \text{ bps} \times \$115 \approx \$18 \text{ per run}
+   $$
 
 2. **Latency Disadvantage**: Our 1-second updates are glacial compared to real HFT (microseconds). This costs ~$10-15 per run in adverse selection.
 
