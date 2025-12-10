@@ -775,8 +775,8 @@ Tested η ∈ {0.25, 0.5, 1.0}:
 ### 8.4 Alternative Fill Models
 
 Tested fill model with:
-- **Linear decay**: $\lambda_t = \lambda_0 (1 - \alpha \cdot \text{price\_deviation})$
-- **Power law**: $\lambda_t = \lambda_0 (\text{price\_deviation})^{-\alpha}$
+- **Linear decay**: $\lambda_t = \lambda_0 (1 - \alpha \cdot \text{price_deviation})$
+- **Power law**: $\lambda_t = \lambda_0 (\text{price_deviation})^{-\alpha}$
 
 Results:
 
