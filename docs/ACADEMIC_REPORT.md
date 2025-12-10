@@ -289,11 +289,11 @@ Similarly for $e^{\text{ask}}_t$.
 **Step 2: Signed Volume Changes**
 
 $$
-\Delta b_t = e^{\text{bid}}_t \times |\Delta(\text{bid\_size})_t|
+\Delta b_t = e^{\text{bid}}_t \times |\Delta(\mathrm{bid\_size})_t|
 $$
 
 $$
-\Delta a_t = e^{\text{ask}}_t \times |\Delta(\text{ask\_size})_t|
+\Delta a_t = e^{\text{ask}}_t \times |\Delta(\mathrm{ask\_size})_t|
 $$
 
 **Step 3: OFI Aggregation**
