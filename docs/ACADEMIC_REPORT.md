@@ -98,7 +98,7 @@ $$
 
 With $R^2 \approx$ 8% at 1-second horizons and highly significant β coefficients across a large cross-section of stocks.
 
-**Definition**:
+**Definition**
 $$
 \Delta a^i\right)
 $$
