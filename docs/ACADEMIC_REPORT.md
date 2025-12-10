@@ -933,7 +933,7 @@ The complete codebase, data processing scripts, and documentation are available 
 The market maker's value function $H(s, x, q, t)$ satisfies:
 
 $$
-\frac{\partial H}{\partial t} + \sup_{\delta^{bid}, \delta^{ask}} \{ \lambda^{bid}(\delta^{bid})[H(s, x - s + \delta^{bid}, q+1, t) - H(s,x,q,t)] + \lambda^{ask}(\delta^{ask})[H(s, x + s + \delta^{ask}, q-1, t) - H(s,x,q,t)] \} = 0
+\frac{\partial H}{\partial t} + \sup_{\delta^{bid}, \delta^{ask}} \\{ \lambda^{bid}(\delta^{bid})[H(s, x - s + \delta^{bid}, q+1, t) - H(s,x,q,t)] + \lambda^{ask}(\delta^{ask})[H(s, x + s + \delta^{ask}, q-1, t) - H(s,x,q,t)] \\} = 0
 $$
 
 With terminal condition: $H(s,x,q,T) = x + qs - \alpha q^2$ (inventory penalty).
