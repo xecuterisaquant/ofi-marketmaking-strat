@@ -93,7 +93,7 @@ Key insights:
 **Cont, Kukanov, & Stoikov (2014)** establish that OFI is a key driver of short-term price changes. They show:
 
 $$
-\Delta p_t = \beta \cdot \text{OFI}_t + \epsilon_t \Delta  a^i\right
+\Delta p_t = \beta \cdot \text{OFI}_t + \epsilon_t \Delta  a^i\right)
 $$
 
 With $R^2 \approx$ 8% at 1-second horizons and highly significant β coefficients across a large cross-section of stocks.
