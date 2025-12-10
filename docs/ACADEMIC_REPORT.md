@@ -667,7 +667,7 @@ Despite 60-63% improvement, absolute PnL remains negative. This is **expected an
 1. **Missing Exchange Rebates**: Real market makers earn ~0.25 bps per fill in rebates (Nasdaq, NYSE). This amounts to:
 
 $$
-\text{Missing Revenue} = 127  \text{ fills} \times 0.25  \text { bps} \times $\text{115} \approx 18  \text{ per run}
+\text{Missing Revenue} = 127  \text{ fills} \times 0.25  \text { bps} \times \text{115} \approx 18  \text{ per run}
 $$
 
 2. **Latency Disadvantage**: Our 1-second updates are glacial compared to real HFT (microseconds). This costs ~$10-15 per run in adverse selection.
