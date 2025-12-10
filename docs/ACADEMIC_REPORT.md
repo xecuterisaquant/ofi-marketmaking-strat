@@ -5,7 +5,6 @@
 ---
 
 **Author**: Harsh Hari
-
 **Institution**: University of Illinois at Urbana-Champaign  
 **Course**: FIN 554 - Algorithmic Trading System Design & Testing  
 **Date**: December 6, 2025  
