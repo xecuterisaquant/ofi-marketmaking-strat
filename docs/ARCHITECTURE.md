@@ -35,6 +35,7 @@ RDA Files → R Loader → Pandas DataFrame → Feature Engineering
 #### 2.1 OFI Computation
 
 **Mathematical Definition**:
+
 $$
 \text{OFI}_t = \Delta Q^{\text{bid}}_t - \Delta Q^{\text{ask}}_t
 $$
@@ -59,6 +60,7 @@ class OFICalculator:
 ```
 
 **Normalization**:
+
 $$
 \text{OFI}^{\text{norm}}_t = \frac{\text{OFI}_t}{\sigma_{\text{OFI}}}
 $$
@@ -109,6 +111,7 @@ $$
 #### 3.1 Reservation Price
 
 **Formula**:
+
 $$
 r_t = S_t - q_t \cdot \gamma \cdot \sigma^2 \cdot (T - t) + \kappa \cdot \text{OFI}^{\text{norm}}_t
 $$
@@ -153,6 +156,7 @@ def compute_reservation_price(
 #### 3.2 Optimal Spread
 
 **Formula**:
+
 $$
 \delta_t = \gamma \sigma^2 (T - t) + \frac{2}{\gamma} \log(1 + \gamma / \lambda) + \eta \cdot |\text{OFI}^{\text{norm}}_t|
 $$
@@ -189,9 +193,11 @@ def compute_optimal_spread(
 #### 3.3 Quote Generation
 
 **Formulas**:
+
 $$
 p^{\text{bid}}_t = r_t - \delta_t / 2
 $$
+
 $$
 p^{\text{ask}}_t = r_t + \delta_t / 2
 $$
@@ -229,6 +235,7 @@ def generate_quotes(self, ...):
 #### 4.1 Fill Intensity
 
 **Formula**:
+
 $$
 \lambda^{\text{bid}}_t = \lambda_0 \cdot \exp\left(-\alpha \cdot \frac{p^{\text{bid}}_t - p^{\text{market,bid}}_t}{p^{\text{market,mid}}_t}\right)
 $$
@@ -236,7 +243,7 @@ $$
 Where:
 - $\lambda_0$ = Base fill intensity (1.0)
 - $\alpha$ = Price sensitivity (100.0)
-- Numerator = How much worse our quote is than market
+- Numerator = How much worse our quote is than the market
 
 **Interpretation**:
 - Better quote (closer to mid) → Higher intensity → More fills
@@ -245,6 +252,7 @@ Where:
 #### 4.2 Fill Probability
 
 **Per-Second Probability**:
+
 $$
 P(\text{fill}) = 1 - \exp(-\lambda_t \cdot \Delta t)
 $$
@@ -304,6 +312,7 @@ class BacktestState:
 ```
 
 **PnL Calculation**:
+
 $$
 \text{PnL}_t = \text{Cash}_t + Q_t \cdot S_t
 $$
