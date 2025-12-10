@@ -126,7 +126,7 @@ Where:
 
 **Components**:
 1. **Base Price** ($S_t$): Current market price
-2. **Inventory Penalty** ($ \-q \gamma \sigma^2 (T-t)$): Makes reservation price less favorable when holding inventory
+2. **Inventory Penalty** ($ -q \gamma \sigma^2 (T-t) $): Makes reservation price less favorable when holding inventory
 3. **OFI Skew** ($\kappa \cdot \text{OFI}^{\text{norm}}_t$): Shifts price based on order flow imbalance
 
 **Implementation**:
