@@ -100,7 +100,7 @@ With $R^2 \approx$ 8% at 1-second horizons and highly significant β coefficient
 
 **Definition**:
 $$
-\text{OFI}_t = \sum_{i: t_{i-1} < t \leq t_i} e^i \left(\Delta b^i - \Delta a^i\right)
+\sum_{i: t_{i-1} < t \leq t_i} e^i \left(\Delta b^i - \Delta a^i\right)
 $$
 
 Where:
