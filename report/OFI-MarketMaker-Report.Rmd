@@ -1,11 +1,17 @@
 ---
 title: "OFI-Driven Market Making Strategy"
-subtitle: "Extension of Cont, Kukanov & Stoikov (2014) OFI Replication"
+subtitle: "Extension of Cont, Kukanov & Stoikov (2014) OFI Replication."
 authors:
   - name: "Harsh Hari"
     email: harsh6@illinois.edu
-    department: Finance
+    Department: Finance
     affiliation: University of Illinois
+
+  - name: "Sharjeel Ahmad"
+    email: ahmad18@illinois.edu
+    Department: Physics
+    affiliation: University of Illinois
+
 abstract: |
    This paper extends a successful replication of "The Price Impact of Order Book Events" (Cont, Kukanov & Stoikov, 2014) by developing an OFI-driven market making strategy that achieves 63% loss reduction (72% win rate, $2,118 absolute improvement) compared to symmetric baselines. Building on the validated finding that order flow imbalance (OFI) predicts short-term price movements (mean R² = 8.1%, 100% positive beta rate across 40 symbol-days), we implement an Avellaneda-Stoikov quoting engine that integrates OFI signals to reduce adverse selection. Across 400 backtests (5 symbols, 20 trading days, January 2017), the OFI-integrated strategy demonstrates statistically significant improvements (p < 0.001) with consistent performance across all securities. The mechanism operates primarily through avoiding toxic fills (65% reduction in fill count) rather than optimizing individual fill quality. Results are robust to parameter variations and demonstrate practical value of academic microstructure research for market making.
 keywords: ["market making", "order flow imbalance", "Avellaneda-Stoikov", "high-frequency trading", "algorithmic execution", "adverse selection"]
@@ -42,13 +48,13 @@ This project develops a **market making strategy** that leverages **Order Flow I
 
 ## Market Making and Optimal Quoting
 
-@AvellanedaStoikov2008 provide a tractable framework for optimal market making in limit order books. They model the market maker as solving a stochastic control problem: maximize expected utility of terminal wealth subject to inventory risk. The optimal quotes center around a **reservation price** $r_t = s_t - \gamma \sigma^2 q_t T$, where $s_t$ is the mid-price, $q_t$ is inventory, $\gamma$ is risk aversion, $\sigma$ is volatility, and $T$ is time to close.
+@AvellanedaStoikov2008 provide a tractable stochastic framework for optimal market making in limit order books, where a dealer maximizes expected utility of terminal wealth under inventory risk. The optimal quotes center around a **reservation price** $r_t = s_t - \gamma \sigma^2 q_t T$, which shifts quotes away from the mid-price $s_t$ in proportion to inventory $q_t$, risk aversion $\gamma$, volatility $\sigma$ and time to close $T$. They also derive optimal bid–ask spreads by balancing spread capture against inventory and execution risk, using asymmetric order‐arrival intensities. In this report, the Avellaneda–Stoikov framework serves as the core quoting engine, but it is extended to address forms of adverse selection not directly modeled in the original work. First, the reservation price is augmented with a short-horizon predictive signal—order flow imbalance (OFI)—allowing quotes to adjust not only for inventory but also for microstructure-driven price pressure. Second, the fill process is implemented through a parametric model inspired by Avellaneda–Stoikov’s exponential fill intensities, adapted for realistic backtesting. These enhancements yield a more adaptive and resilient market-making strategy while preserving the theoretical structure of the original model.
 
-@GlostenMilgrom1985 model market making under adverse selection, where informed traders exploit market makers by trading ahead of price changes. Our contribution integrates OFI signals to break the symmetry assumption.
+@GlostenMilgrom1985 provide the foundational model of market making under adverse selection, showing how informed traders exploit quotes and why a bid–ask spread arises even in a frictionless, competitive setting. Their framework highlights that symmetric order arrival assumptions fail in the presence of informed flow. Building on this insight, our report incorporates real-time Order Flow Imbalance (OFI) signals to detect and react to asymmetric trading pressure. By using OFI as a practical proxy for informed order flow, the Avellaneda–Stoikov quoting engine can dynamically skew quotes to avoid toxic fills. Empirically, this integration reduces fill count by roughly 65% and substantially mitigates losses, demonstrating that actively managing the adverse-selection mechanism identified by Glosten and Milgrom yields significantly improved market-making performance.
 
 ## Order Flow Imbalance
 
-@Cont2014 demonstrate that short-horizon price changes are nearly linear in order flow imbalance at the best quotes. Our replication confirmed this with 100% positive betas and mean R² = 8.1% across 40 symbol-days in January 2017.
+@Cont2014 provide the empirical and theoretical basis for the OFI signal used in this report. Their study demonstrates that short-horizon price changes are nearly linear in order flow imbalance—a composite of market orders, limit orders, and cancellations at the best quotes—showing that OFI is a robust proxy for supply–demand pressure. We replicate this result in our 2017 sample, finding 100% positive betas and a mean $𝑅^2 = 8.1\%$ across 40 symbol-days. Building on these insights, the report operationalizes OFI by integrating a normalized version of the signal directly into the quoting engine, using it to skew quotes and mitigate adverse selection. This shifts Cont et al.’s contribution from empirical characterization of price impact to a tactical market-making application that leverages OFI’s predictive power in real time.
 
 # Methodology
 
