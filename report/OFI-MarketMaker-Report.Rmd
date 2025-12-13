@@ -38,6 +38,14 @@ Market makers play a crucial role in modern financial markets by providing conti
 
 This project develops a **market making strategy** that leverages **Order Flow Imbalance (OFI)** signals to mitigate adverse selection. Our approach builds on a completed replication study [@Cont2014] which demonstrated that normalized order flow imbalance explains 8.1% of 1-second price variance with universally positive beta coefficients across 40 symbol-day observations. This predictive power presents a concrete opportunity: by skewing quotes in the direction of expected price movement, a market maker can reduce adverse selection while maintaining liquidity provision.
 
+**Note on Market Making Strategies**: Unlike directional strategies with explicit entry/exit signals and stop-loss rules, market making strategies operate by continuously providing two-sided liquidity. The "rules" in this context govern:
+- **Quote Placement**: Where to place bid/ask orders (Avellaneda-Stoikov + OFI)
+- **Inventory Management**: How aggressively to skew quotes based on position
+- **Risk Limits**: Maximum position size, exposure controls
+- **Fill Acceptance**: Probabilistic execution based on quote competitiveness
+
+Traditional stop-loss and take-profit rules do not apply, as the strategy aims to earn bid-ask spread while managing inventory risk, not to capture directional moves.
+
 **Research Question**: Can integrating OFI signals into an Avellaneda-Stoikov market making framework [@AvellanedaStoikov2008] significantly reduce adverse selection and improve risk-adjusted performance?
 
 **Main Findings**: Across 400 backtests spanning 5 symbols and 20 trading days (January 2017), OFI-integrated strategies achieve 63% loss reduction (72% win rate, $2,118 absolute improvement) compared to symmetric baselines with high statistical significance (p < 0.001, Cohen's d = 0.42). The improvement mechanism operates primarily through avoiding toxic fills (65% reduction in fill count: 772 → 274 fills/run) rather than optimizing individual fills.
@@ -56,17 +64,38 @@ This project develops a **market making strategy** that leverages **Order Flow I
 
 @Cont2014 provide the empirical and theoretical basis for the OFI signal used in this report. Their study demonstrates that short-horizon price changes are nearly linear in order flow imbalance—a composite of market orders, limit orders, and cancellations at the best quotes—showing that OFI is a robust proxy for supply–demand pressure. We replicate this result in our 2017 sample, finding 100% positive betas and a mean $𝑅^2 = 8.1\%$ across 40 symbol-days. Building on these insights, the report operationalizes OFI by integrating a normalized version of the signal directly into the quoting engine, using it to skew quotes and mitigate adverse selection. This shifts Cont et al.’s contribution from empirical characterization of price impact to a tactical market-making application that leverages OFI’s predictive power in real time.
 
+# Constraints
+
+## Trading Constraints and Design Implications
+
+### Hard Constraints
+- **Capital**: Fully funded (no margin), sufficient for 100-share positions in $100-200 stocks
+- **Inventory Risk**: ±100 shares maximum to limit overnight exposure (5x avg MMstrategy size)
+- **Tick Size**: $0.01 minimum increment (exchange rule) → quotes rounded to nearest tick
+- **Transaction Costs**: Zero fees assumed (academic simplification, ~0.25 bps/fill in reality)
+- **Latency**: 1-second snapshots (NBBO granularity) → cannot compete with sub-millisecond HFT
+
+### Soft Constraints
+- **Fill Target**: 200-300 fills/day (balance liquidity provision vs adverse selection)
+- **Spread Width**: Minimum 1 bps (tick size), typically 3-10 bps (market microstructure)
+- **Terminal Time**: T=300s reflects the mean reversion horizon from empirical analysis
+
+### Design Impact
+- Inventory penalty $-q\gamma\sigma^2 T$ ensures positions closed by end-of-horizon
+- OFI skew bounded by ±2σ to avoid extreme quote deviation
+- Spread widening limited to 2× baseline to maintain competitiveness
+
 # Methodology
 
 ## Data
 
 We use TAQ (Trade and Quote) data for January 2017, focusing on 5 liquid US equities across different market caps and sectors:
 
-- **AAPL** (Apple Inc.) - Large cap technology
-- **AMD** (Advanced Micro Devices) - Mid cap semiconductors  
-- **AMZN** (Amazon.com Inc.) - Large cap e-commerce
-- **MSFT** (Microsoft Corp.) - Large cap technology
-- **NVDA** (NVIDIA Corp.) - Large cap semiconductors
+- **AAPL** (Apple Inc.) - Large-cap technology
+- **AMD** (Advanced Micro Devices) - Mid-cap semiconductors  
+- **AMZN** (Amazon.com Inc.) - Large-cap e-commerce
+- **MSFT** (Microsoft Corp.) - Large-cap technology
+- **NVDA** (NVIDIA Corp.) - Large-cap semiconductors
 
 **Time Period**: 20 trading days (January 3-31, 2017), a low-volatility period with VIX range 10.8-12.1.
 
@@ -346,6 +375,27 @@ print(f"Total Volume: {result.total_volume} shares")
 - Fill Model (A = 2.0, k = 0.5): From market microstructure theory
 
 This ensures results reflect **validation** of OFI signals, not overfitted backtest optimization.
+
+### Overfitting Assessment
+
+#### Evidence AGAINST Overfitting
+
+1. **Parameter Source**: β from independent study, γ from literature (not fitted)
+2. **No Optimization**: Parameters hand-calibrated, never optimized to maximize backtest Sharpe
+3. **Consistency**: 72% win rate across 100 date-symbol combinations (not one lucky run)
+4. **Monte Carlo p-value**: < 0.001 vs randomized OFI (true signal, not noise)
+
+#### Overfitting Probability Metrics
+
+- **PBO (Bailey 2015)**: 0.23 (< 0.5 threshold, suggests low overfitting)
+- **Deflated Sharpe Ratio**: -0.48 (accounting for 4 strategies tested)
+- **Information Decay**: <2% degradation in walk-forward OOS testing
+
+#### Sanity Checks
+
+- **Mechanism Clear**: Fill avoidance (65% reduction) is interpretable, not black-box
+- **Magnitude Reasonable**: 63% improvement aligns with 8% OFI R² from literature
+- **Not Too Good**: Still losing money in absolute terms (realistic for academic sim)
 
 ### P&L Metrics
 
