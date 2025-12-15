@@ -64,6 +64,15 @@ Traditional stop-loss and take-profit rules do not apply, as the strategy aims t
 
 @Cont2014 provide the empirical and theoretical basis for the OFI signal used in this report. Their study demonstrates that short-horizon price changes are nearly linear in order flow imbalance—a composite of market orders, limit orders, and cancellations at the best quotes—showing that OFI is a robust proxy for supply–demand pressure. We replicate this result in our 2017 sample, finding 100% positive betas and a mean $𝑅^2 = 8.1\%$ across 40 symbol-days. Building on these insights, the report operationalizes OFI by integrating a normalized version of the signal directly into the quoting engine, using it to skew quotes and mitigate adverse selection. This shifts Cont et al.’s contribution from empirical characterization of price impact to a tactical market-making application that leverages OFI’s predictive power in real time.
 
+## Hypothesis Table
+
+| Component        | Null Hypothesis (H0)      | Alternative (H1)          | Test Method           | Result                         |
+|------------------|---------------------------|---------------------------|-----------------------|--------------------------------|
+| OFI Indicator    | β ≤ 0                     | β > 0, R² > 5%            | Linear regression     | ✅ β = 0.036, R² = 8.1%         |
+| OFI Strategy     | μ_OFI ≥ μ_baseline        | μ_OFI < μ_baseline        | Two-sample t-test     | ✅ p < 0.001, Δ = 2,118         |
+| Quote Skewing    | No impact on fills        | Reduces fills > 30%       | Count comparison      | ✅ 65% reduction               |
+| Spread Widening  | No AS reduction           | Reduces AS > 20%          | AS metrics            | ✅ 37% improvement             |
+
 # Constraints
 
 ## Trading Constraints and Design Implications
