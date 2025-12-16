@@ -48,7 +48,7 @@ Traditional stop-loss and take-profit rules do not apply, as the strategy aims t
 
 **Research Question**: Can integrating OFI signals into an Avellaneda-Stoikov market making framework [@AvellanedaStoikov2008] significantly reduce adverse selection and improve risk-adjusted performance?
 
-**Main Findings**: Across 400 backtests spanning 5 symbols and 20 trading days (January 2017), OFI-integrated strategies achieve 63% loss reduction (72% win rate, $2,118 absolute improvement) compared to symmetric baselines with high statistical significance (p < 0.001, Cohen's d = 0.42). The improvement mechanism operates primarily through avoiding toxic fills (65% reduction in fill count: 772 → 274 fills/run) rather than optimizing individual fills.
+**Main Findings**: Across 400 backtests spanning 5 symbols and 20 trading days (January 2017), OFI-integrated strategies achieve 63% loss reduction (72% win rate, $2,118 absolute improvement) compared to symmetric baselines with high statistical significance (p < 0.001, Cohen's d = 0.42). The improvement mechanism operates primarily through avoiding toxic fills (65% reduction in fill count: 772 $\rightarrow$ 274 fills/run) rather than optimizing individual fills.
 
 **Contributions**: This work makes three key contributions: (1) first large-scale empirical validation of OFI-Avellaneda-Stoikov integration with comprehensive statistical testing, (2) mechanism decomposition identifying fill avoidance as the primary benefit channel, and (3) production-grade open-source implementation with 141 passing tests enabling independent verification.
 
@@ -80,9 +80,9 @@ While @GlostenMilgrom1985 theoretically established the problem of adverse selec
 ### Hard Constraints
 - **Capital**: Fully funded (no margin), sufficient for 100-share positions in $100-200 stocks
 - **Inventory Risk**: ±100 shares maximum to limit overnight exposure (5x avg MM strategy size)
-- **Tick Size**: $0.01 minimum increment (exchange rule) → quotes rounded to nearest tick
+- **Tick Size**: $0.01 minimum increment (exchange rule) $\rightarrow$ quotes rounded to nearest tick
 - **Transaction Costs**: Zero fees assumed (academic simplification, ~0.25 bps/fill in reality)
-- **Latency**: 1-second snapshots (NBBO granularity) → cannot compete with sub-millisecond HFT
+- **Latency**: 1-second snapshots (NBBO granularity) $\rightarrow$ cannot compete with sub-millisecond HFT
 
 ### Soft Constraints
 - **Fill Target**: 200-300 fills/day (balance liquidity provision vs adverse selection)
@@ -92,7 +92,7 @@ While @GlostenMilgrom1985 theoretically established the problem of adverse selec
 ### Design Impact
 - Inventory penalty $-q\gamma\sigma^2 T$ ensures positions closed by end-of-horizon
 - OFI skew bounded by ±2$\sigma$ to avoid extreme quote deviation
-- Spread widening limited to 2× baseline to maintain competitiveness
+- Spread widening limited to $2\times$ baseline to maintain competitiveness
 
 # Methodology
 
@@ -101,7 +101,7 @@ While @GlostenMilgrom1985 theoretically established the problem of adverse selec
 We use TAQ (Trade and Quote) data for January 2017, focusing on 5 liquid US equities across different market caps and sectors:
 
 - **AAPL** (Apple Inc.) - Large-cap technology
-- **AMD** (Advanced Micro Devices) - Mid-cap semiconductors  
+- **AMD** (Advanced Micro Devices) - Mid-cap semiconductors
 - **AMZN** (Amazon.com Inc.) - Large-cap e-commerce
 - **MSFT** (Microsoft Corp.) - Large-cap technology
 - **NVDA** (NVIDIA Corp.) - Large-cap semiconductors
@@ -215,10 +215,10 @@ $$
 In the absence of historical fill data, we calibrate model parameters using spread statistics:
 
 1. **Decay rate $k$**:
-   - Tight spreads (1-2 bps) → $k = 1.0$ (fast decay, fills concentrated at touch)
-   - Medium spreads (2-5 bps) → $k = 0.7$
-   - Wide spreads (5-10 bps) → $k = 0.5$
-   - Very wide (>10 bps) → $k = 0.3$ (slow decay, fills possible far from mid)
+   - Tight spreads (1-2 bps) $\rightarrow$ $k = 1.0$ (fast decay, fills concentrated at touch)
+   - Medium spreads (2-5 bps) $\rightarrow$ $k = 0.7$
+   - Wide spreads (5-10 bps) $\rightarrow$ $k = 0.5$
+   - Very wide (>10 bps) $\rightarrow$ $k = 0.3$ (slow decay, fills possible far from mid)
 
 2. **Intensity at touch $A$**:
    - Derived from target fill rate: $A = -\ln(1 - P_{\text{target}}) / \Delta t$
@@ -242,7 +242,7 @@ The fill model was validated with 26 unit tests covering:
 
 - Intensity decay behavior (exponential with distance)
 - Probability bounds ($P \in [0,1]$)
-- Aggressive quote handling (cross-market quotes → instant fill)
+- Aggressive quote handling (cross-market quotes $\rightarrow$ instant fill)
 - Bid/ask symmetry
 - Batch simulation correctness
 - Reproducibility with fixed random seeds
@@ -301,8 +301,8 @@ Aggressive quotes (e.g., bid > ask, typically implying a negative distance < -5b
 
 **Inventory Update**: When filled:
 
-- Bid fill (sold shares): `cash += price × size`, `inventory -= size`
-- Ask fill (bought shares): `cash -= price × size`, `inventory += size`
+- Bid fill (sold shares): `cash += price` $\times$ `size`, `inventory -= size`
+- Ask fill (bought shares): `cash -= price` $\times$ `size`, `inventory += size`
 
 **P&L Tracking**: Mark-to-market P&L computed each second:
 
@@ -420,11 +420,11 @@ This ensures results reflect **validation** of OFI signals, not overfitted backt
 
 **Multiple Testing Adjustment**: Tested 4 strategies across 100 symbol-days = 400 comparisons. Using Bonferroni correction: $\alpha$ = 0.05/4 = 0.0125. Our p-value < 0.001 easily passes this conservative threshold, confirming results are not due to multiple testing luck.
 
-**Effect Size Stability**: Cohen's d = 0.42 (medium effect) is economically meaningful and consistent across subsamples. Small overfitting typically shows large in-sample effects that vanish out-of-sample - our consistent 63% improvement suggests genuine signal.
+**Effect Size Stability**: Cohen's d = 0.42 (medium effect) is economically meaningful and consistent across subsamples. Small overfitting typically shows large in-sample effects that vanish out-of-sample — our consistent 63% improvement suggests genuine signal.
 
-**Parameter Sensitivity**: Performance robust to ±30% variations in risk aversion ($\gamma$), ±50% in signal strength ($\alpha$), and alternative fill models. Overfitted strategies would show extreme sensitivity to parameter choices.
+**Parameter Sensitivity**: Performance robust to $\pm$30\% variations in risk aversion ($\gamma$), $\pm$50\% in signal strength ($\alpha$), and alternative fill models. Overfitted strategies would show extreme sensitivity to parameter choices.
 
-**Monte Carlo Null Test**: Randomized OFI timestamps 1,000 times to test null hypothesis that performance is due to chance. Result: 0.1% of random shuffles achieved ≥63% improvement (p = 0.001), confirming statistical significance.
+**Monte Carlo Null Test**: Randomized OFI timestamps 1,000 times to test null hypothesis that performance is due to chance. Result: 0.1\% of random shuffles achieved $\geq$63\% improvement (p = 0.001), confirming statistical significance.
 
 **Future Rigorous Testing** (beyond project scope):
 - Probability of Backtest Overfitting (PBO, Bailey et al. 2015): Requires combinatorial testing across parameter subsets
@@ -436,7 +436,7 @@ These advanced metrics require additional infrastructure but would provide forma
 #### Sanity Checks
 
 - **Mechanism Clear**: Fill avoidance (65% reduction) is interpretable, not black-box
-- **Magnitude Reasonable**: 63% improvement aligns with 8% OFI R² from literature
+- **Magnitude Reasonable**: 63\% improvement aligns with 8\% OFI R$^2$ from literature
 - **Not Too Good**: Still losing money in absolute terms (realistic for academic simulation)
 
 ### P&L Metrics
@@ -529,15 +529,15 @@ $$
 
 **Critical Insight - Why Weak Correlation Drives Strong Performance**:
 
-The modest OFI-return correlation ($\rho$ ≈ 0.01-0.04) might seem inconsistent with 63% performance improvement, but this reflects a fundamental principle in high-frequency trading:
+The modest OFI-return correlation ($\rho$ $\approx$ 0.01-0.04) might seem inconsistent with 63\% performance improvement, but this reflects a fundamental principle in high-frequency trading:
 
 1. **Cumulative Edge**: Market making generates thousands of decisions per day (5,400 1-second intervals). A 52% directional accuracy (vs 50% random) compounds to significant P&L over many iterations.
 
-2. **Fill Avoidance Mechanism**: The primary benefit comes from AVOIDING fills during adverse selection periods (65% fill reduction: 772 → 274 fills/day), not from predicting exact price movements. Even a weak signal ($\rho$=0.02) is sufficient to identify toxic vs benign flow.
+2. **Fill Avoidance Mechanism**: The primary benefit comes from AVOIDING fills during adverse selection periods (65\% fill reduction: 772 $\rightarrow$ 274 fills/day), not from predicting exact price movements. Even a weak signal ($\rho$=0.02) is sufficient to identify toxic vs benign flow.
 
 3. **Risk-Adjusted Edge**: The improvement shows in reduced losses (from -\$3,352 to -\$1,234) and lower volatility ($\sigma$ from \$6,440 to \$2,382), not directional profits. OFI helps avoid the worst outcomes rather than catching the best moves.
 
-4. **Aligns with Literature**: Cont et al. (2014) found R² = 8.1% ($\rho$ ≈ 0.28) at FILL-LEVEL granularity with microsecond data. Our 1-second NBBO snapshots naturally show weaker correlations, but the economic value persists through quote skewing.
+4. **Aligns with Literature**: Cont et al. (2014) found R$^2$ = 8.1\% ($\rho$ $\approx$ 0.28) at FILL-LEVEL granularity with microsecond data. Our 1-second NBBO snapshots naturally show weaker correlations, but the economic value persists through quote skewing.
 
 **Mathematical Support**: 
 - Binomial test: 52% accuracy over 5,400 observations → p < 0.001 (highly significant)
@@ -566,7 +566,7 @@ The OFI market making system is implemented in Python 3.13 with the following mo
 
 Feature engineering module implementing:
 
-- `compute_ofi_signal()`: Converts normalized OFI → drift signal in basis points
+- `compute_ofi_signal()`: Converts normalized OFI $\rightarrow$ drift signal in basis points
 - `compute_microprice()`: Depth-weighted mid price
 - `compute_ewma_volatility()`: Exponentially weighted volatility estimation
 - `compute_imbalance()`: Bid-ask depth imbalance ratio
@@ -601,7 +601,7 @@ Performance metrics module with **strict anti-overfitting design**:
 
 - `compute_sharpe_ratio()`: Annualized risk-adjusted return
 - `compute_sortino_ratio()`: Downside deviation only
-- `compute_max_drawdown()`: Peak-to-trough decline  
+- `compute_max_drawdown()`: Peak-to-trough decline
 - `compute_fill_edge()`: Profitability per fill vs mid
 - `compute_adverse_selection()`: Post-fill price drift (1s/5s/10s)
 - `compute_inventory_metrics()`: Position risk statistics
@@ -619,7 +619,7 @@ Data infrastructure for loading TAQ `.rda` files, constructing 1-second NBBO tim
 Comprehensive test suite with **141 passing tests (100% success rate)**:
 
 - `tests/test_features.py`: 27 tests
-- `tests/test_engine.py`: 25 tests  
+- `tests/test_engine.py`: 25 tests
 - `tests/test_fills.py`: 26 tests
 - `tests/test_backtest.py`: 24 tests
 - `tests/test_metrics.py`: 39 tests (NEW)
@@ -641,9 +641,9 @@ The parametric fill model was validated against expected theoretical properties 
 
 **Intensity Decay**: Fill intensity decreases exponentially with distance. At touch ($\delta$=0), intensity = 2.0 fills/second (default). At 5bps, intensity < 0.1.
 
-**Fill Probability**: All simulated probabilities ∈ [0,1]. Monte Carlo simulations (N=1000) confirm expected fill rates: ~86% at touch, ~70% at 1bp, ~52% at 2bp.
+**Fill Probability**: All simulated probabilities $\in$ [0,1]. Monte Carlo simulations (N=1000) confirm expected fill rates: ~86\% at touch, ~70\% at 1bp, ~52\% at 2bp.
 
-**Calibration**: Tight-spread stocks (1-2bp) → k ≥ 0.7. Wide-spread (>10bp) → k ≤ 0.3. Target fill rates achieved within 5% tolerance.
+**Calibration**: Tight-spread stocks (1-2bp) $\rightarrow$ k $\geq$ 0.7. Wide-spread (>10bp) $\rightarrow$ k $\leq$ 0.3. Target fill rates achieved within 5\% tolerance.
 
 **Reproducibility**: Fixed seeds produce identical sequences, enabling deterministic debugging.
 
@@ -655,15 +655,15 @@ The event-driven backtest framework was validated with 24 integration tests, ens
 
 **Inventory Mechanics**: Fill execution properly updates cash and inventory:
 
-- Bid fills (sales): Cash increases by `price × size`, inventory decreases
-- Ask fills (purchases): Cash decreases, inventory increases  
-- Net effect captured in cash + inventory changes
+- Bid fills (sales): Cash increases by (price times size), inventory decreases
+- Ask fills (purchases): Cash decreases, inventory increases
+- Net effect captured in cash plus inventory changes
 
-**P&L Reconciliation**: Mark-to-market P&L computation verified: `P&L = cash + inventory × mid`. Tested with both long and short positions. Maximum error < 1e-10 (numerical precision).
+**P\&L Reconciliation**: Mark-to-market P\&L computation verified: P\&L = cash + (inventory times mid). Tested with both long and short positions. Maximum error < 1e-10 (numerical precision).
 
 **Integration Tests**: End-to-end backtest on 60-second synthetic NBBO confirmed:
 
-- Quotes generated within market (our_bid ≤ ask, our_ask ≥ bid)
+- Quotes generated within market (our\_bid $\leq$ ask, our\_ask $\geq$ bid)
 - Features computed correctly (OFI, microprice, volatility)
 - State history recorded with correct timestamps
 - Result dataframes export cleanly
@@ -683,48 +683,48 @@ The metrics module was validated with 39 comprehensive tests using known-answer 
 
 **Sharpe/Sortino Ratios**: Tested with known distributions:
 
-- Zero returns → Sharpe = 0
-- Constant returns (no volatility) → Sharpe = 0 (robust to numerical precision)
-- Positive/negative mean → correct sign
-- Sortino ≥ Sharpe for positive-mean strategies (only penalizes downside)
+- Zero returns $\rightarrow$ Sharpe = 0
+- Constant returns (no volatility) $\rightarrow$ Sharpe = 0 (robust to numerical precision)
+- Positive/negative mean $\rightarrow$ correct sign
+- Sortino $\geq$ Sharpe for positive-mean strategies (only penalizes downside)
 - Proper annualization scaling with $\sqrt{N}$
 
 **Maximum Drawdown**: Edge cases validated:
 
-- Monotonic increase → DD = 0
-- Monotonic decrease → DD = total drop
-- Multiple peaks → correctly identifies maximum
+- Monotonic increase $\rightarrow$ DD = 0
+- Monotonic decrease $\rightarrow$ DD = total drop
+- Multiple peaks $\rightarrow$ correctly identifies maximum
 - Percentage calculation accurate (50% drop verified)
 
 **Fill Edge**: Bid/ask symmetry confirmed:
 
-- Bid fill above mid → positive edge (correct calculation)
-- Ask fill below mid → positive edge (symmetric)
-- Adverse fills → negative edge detected
-- Multiple fills → correct averaging
+- Bid fill above mid $\rightarrow$ positive edge (correct calculation)
+- Ask fill below mid $\rightarrow$ positive edge (symmetric)
+- Adverse fills $\rightarrow$ negative edge detected
+- Multiple fills $\rightarrow$ correct averaging
 
 **Adverse Selection**: Post-fill drift measured correctly:
 
-- Bid fills + price rise → positive AS (adverse)
-- Ask fills + price fall → positive AS (adverse)  
-- Favorable moves → negative AS
-- Multiple horizons (1s/5s/10s) tracked accurately
+- Bid fills plus price rise yields positive AS (adverse)
+- Ask fills plus price fall yields positive AS (adverse)
+- Favorable moves yield negative AS
+- Multiple horizons (1s, 5s, 10s) tracked accurately
 
 **Inventory Metrics**: Risk measurement validated:
 
-- Zero inventory → all zeros
-- Constant inventory → zero variance
-- Time at limits correctly detected (5/7 = 71.4%)
+- Zero inventory yields all zeros
+- Constant inventory yields zero variance
+- Time at limits correctly detected (5/7 = 71.4\%)
 - Statistics (mean, std, min, max) accurate
 
 **Signal Correlation**: Validation tool tested:
 
-- Perfect correlation → $\rho$ = 1.0
-- Perfect anti-correlation → $\rho$ = -1.0  
-- Random data → $\rho$ ≈ 0
-- Insufficient data → returns 0 (safe default)
+- Perfect correlation: $\rho$ = 1.0
+- Perfect anti-correlation: $\rho$ = -1.0
+- Random data: $\rho$ $\approx$ 0
+- Insufficient data: returns 0 (safe default)
 
-**Anti-Overfitting Verification**: All tests use **fixed synthetic data** with known answers. No data-dependent assertions - only mathematical correctness verified.
+**Anti-Overfitting Verification**: All tests use **fixed synthetic data** with known answers. No data-dependent assertions; only mathematical correctness verified.
 
 ## Backtest Performance
 
@@ -747,10 +747,10 @@ To isolate the contribution of each strategy component, we test four configurati
 
 | Strategy | Microprice Center | OFI Signal Weight | Mean PnL | Fill Count | Marginal $\delta$ PnL |
 |----------|-------------------|-------------------|----------|------------|----------------|
-| **1. Baseline** | ❌ Mid-price | 0% (disabled) | -$3,352 | 772 | — |
-| **2. Microprice** | ✅ Depth-weighted | 0% (disabled) | -$3,355 | 773 | -$3 (-0.1%) |
-| **3. OFI Ablation** | ✅ Depth-weighted | 50% ($\alpha$=0.5) | -$1,234 | 274 | **+$2,121 (+63.3%)** 🏆 |
-| **4. OFI Full** | ✅ Depth-weighted | 70% ($\alpha$=0.7) | -$1,321 | 226 | -$87 (-7.1%) |
+| **1. Baseline** | (X) Mid-price | 0\% (disabled) | -\$3,352 | 772 | --- |
+| **2. Microprice** | (checkmark) Depth-weighted | 0\% (disabled) | -\$3,355 | 773 | -\$3 (-0.1\%) |
+| **3. OFI Ablation** | (checkmark) Depth-weighted | 50\% ($\alpha$=0.5) | -\$1,234 | 274 | **+\$2,121 (+63.3\%)** BEST |
+| **4. OFI Full** | (checkmark) Depth-weighted | 70\% ($\alpha$=0.7) | -\$1,321 | 226 | -\$87 (-7.1\%) |
 
 **Component Contributions**:
 
@@ -766,7 +766,7 @@ To isolate the contribution of each strategy component, we test four configurati
 
 1. **Loss Reduction**: OFI Ablation achieves 63.2% smaller losses with 72% win rate
 2. **Volatility Reduction**: 63% lower PnL standard deviation ($2.4K vs $6.4K)
-3. **Fill Reduction**: 65% fewer fills (772 → 274), indicating successful adverse selection avoidance
+3. **Fill Reduction**: 65\% fewer fills (772 $\rightarrow$ 274), indicating successful adverse selection avoidance
 4. **Absolute Improvement**: +$2,118/run improvement over baseline
 5. **Economic Interpretation**: Absolute losses are expected in academic simulations without exchange rebates (~$68/run) and sub-millisecond latency. The **$2,118 absolute improvement** validates OFI's effectiveness at reducing adverse selection.
 
@@ -792,7 +792,7 @@ See Figure 3 in Appendix for detailed symbol-level improvement analysis.
 
 Breaking down how OFI achieves improvement:
 
-**1. Fill Avoidance** (Primary Mechanism): 65% reduction in fill count (772 → 274 fills/run). Avoiding toxic fills during high OFI periods accounts for the majority of improvement.
+**1. Fill Avoidance** (Primary Mechanism): 65\% reduction in fill count (772 $\rightarrow$ 274 fills/run). Avoiding toxic fills during high OFI periods accounts for the majority of improvement.
 
 **2. Absolute Dollar Improvement**: 
 - Baseline: -$3,352/run
@@ -821,7 +821,7 @@ See Appendix for all visualizations and statistical significance testing.
 We deliberately AVOID optimizing parameters on backtest data to prevent overfitting:
 
 1. **$\beta$ (OFI beta)**: Estimated from separate 40-symbol-day replication study (out-of-sample)
-2. **$\gamma$ (risk aversion)**: Standard value from Avellaneda-Stoikov (2008) literature  
+2. **$\gamma$ (risk aversion)**: Standard value from Avellaneda-Stoikov (2008) literature
 3. **$\alpha$ (signal adjustment)**: Hand-calibrated based on microstructure theory, then tested for robustness
 
 ### Robustness Testing
@@ -830,7 +830,7 @@ Rather than optimizing to maximize the backtest Sharpe ratio, we test sensitivit
 - Does improvement persist across parameter ranges?
 - Is performance stable or highly sensitive to exact values?
 
-Result: Performance robust across ±30% parameter variations (CV < 15%), confirming genuine signal rather than overfitted artifact.
+Result: Performance robust across $\pm$30\% parameter variations (CV < 15\%), confirming genuine signal rather than overfitted artifact.
 
 ## Walk Forward Validation
 
@@ -880,17 +880,17 @@ Our backtest employs a parametric fill model with exponential intensity decay: $
 **2. Parameter Sensitivity Analysis**: We systematically tested strategy robustness across parameter variations:
 
 **Quoting Parameters** ($\gamma$ × $\alpha$ grid):
-- Risk aversion ($\gamma$): [0.05, 0.063, 0.08] → ±27% variation around baseline
-- Signal adjustment ($\alpha$): [0.05, 0.075, 0.10] → ±33% variation around baseline
-- Result: 3×3 grid = 9 parameter combinations tested
+- Risk aversion ($\gamma$): [0.05, 0.063, 0.08] $\rightarrow$ $\pm$27\% variation around baseline
+- Signal adjustment ($\alpha$): [0.05, 0.075, 0.10] $\rightarrow$ $\pm$33\% variation around baseline
+- Result: $3\times 3$ grid = 9 parameter combinations tested
 
 **Fill Model Parameters**:
-- Intensity variations: A ∈ [0.5, 2.0] (baseline: A = 0.69)
-- Decay rates: k ∈ [0.3, 1.0] (baseline: k = 0.5-1.0 calibrated to spread)
+- Intensity variations: A $\in$ [0.5, 2.0] (baseline: A = 0.69)
+- Decay rates: k $\in$ [0.3, 1.0] (baseline: k = 0.5-1.0 calibrated to spread)
 - Alternative functional forms: exponential, linear, and power-law decay
 
 **Sensitivity Results** (see `figures/sensitivity_quick_pnl.png`):
-- Performance stable across ±30% parameter variations
+- Performance stable across $\pm$30\% parameter variations
 - Hand-calibrated values ($\gamma$=0.063, $\alpha$=0.075) lie in center of good parameter region (marked with red star)
 - Coefficient of variation: Performance degradation < 15% in adjacent parameter cells
 - No "cliff effects": Gradual degradation confirms genuine signal, not overfit artifact
@@ -916,7 +916,7 @@ Importantly, **the directional benefit of OFI signals (avoiding adverse selectio
 Despite 37% improvement (72% win rate, $2,118 absolute gain), absolute PnL remains negative due to realistic simulation limitations:
 
 - **Missing Exchange Rebates**: Real market makers earn ~0.25 bps/fill (~$20/run)
-- **Latency Disadvantage**: 1-second updates vs microsecond HFT reality  
+- **Latency Disadvantage**: 1-second updates vs microsecond HFT reality
 - **Single Venue**: Real MMs route across multiple exchanges
 - **Volume Scale**: 274 fills/run (OFI) vs millions/day in production
 
@@ -963,9 +963,9 @@ This project demonstrates that **integrating Order Flow Imbalance (OFI) signals 
 
 ## Key Findings
 
-1. **63% Loss Reduction, 72% Win Rate**: OFI Ablation shows dramatically smaller losses with $2,118 absolute improvement compared to symmetric baseline (p < 0.001, Cohen's d = 0.42)
+1. **63\% Loss Reduction, 72\% Win Rate**: OFI Ablation shows dramatically smaller losses with \$2,118 absolute improvement compared to symmetric baseline (p < 0.001, Cohen's d = 0.42)
 
-2. **Mechanism Identification**: Improvement primarily via **avoiding toxic fills** (65% reduction: 772 → 274 fills/run) rather than optimizing per-fill quality
+2. **Mechanism Identification**: Improvement primarily via **avoiding toxic fills** (65\% reduction: 772 $\rightarrow$ 274 fills/run) rather than optimizing per-fill quality
 
 3. **Consistency**: Results robust across all symbols with win rates from 55-100% across different assets
 
@@ -1003,9 +1003,9 @@ This project demonstrates that **integrating Order Flow Imbalance (OFI) signals 
 
 The 63% improvement (72% win rate, $2,118 absolute gain) demonstrated in this study validates the operational value of academic microstructure research for practical market making. While our simulation environment differs from live trading conditions (exchange rebates, sub-millisecond latency, multi-venue routing, market impact), the magnitude and consistency of results across all symbols and time periods suggest that OFI-integrated market making represents a genuine advancement over traditional symmetric approaches.
 
-**Practical Implications**: For institutional market makers with appropriate infrastructure, integrating OFI signals offers a concrete pathway to adverse selection reduction. The mechanism—avoiding fills during high-OFI periods—is implementable with standard limit order functionality and does not require exotic execution capabilities.
+**Practical Implications**: For institutional market makers with appropriate infrastructure, integrating OFI signals offers a concrete pathway to adverse selection reduction. The mechanism---avoiding fills during high-OFI periods---is implementable with standard limit order functionality and does not require exotic execution capabilities.
 
-**Academic Implications**: This work demonstrates that short-horizon price predictability (R² = 8%) can translate into economically meaningful performance improvements (63% loss reduction, 72% win rate, $2,118 absolute gain) when operationalized through optimal quote placement. The result challenges the notion that weak-form market efficiency precludes profitable market making strategies beyond pure spread capture.
+**Academic Implications**: This work demonstrates that short-horizon price predictability (R$^2$ = 8\%) can translate into economically meaningful performance improvements (63\% loss reduction, 72\% win rate, \$2,118 absolute gain) when operationalized through optimal quote placement. The result challenges the notion that weak-form market efficiency precludes profitable market making strategies beyond pure spread capture.
 
 **Code and Data Availability**: Full implementation, documentation, and reproducible analysis available at \url{https://github.com/xecuterisaquant/ofi-marketmaking-strat}
 
