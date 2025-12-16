@@ -535,7 +535,7 @@ The modest OFI-return correlation ($\rho$ ≈ 0.01-0.04) might seem inconsistent
 
 2. **Fill Avoidance Mechanism**: The primary benefit comes from AVOIDING fills during adverse selection periods (65% fill reduction: 772 → 274 fills/day), not from predicting exact price movements. Even a weak signal ($\rho$=0.02) is sufficient to identify toxic vs benign flow.
 
-3. **Risk-Adjusted Edge**: The improvement shows in REDUCED LOSSES (-$3,352 → -$1,234) and LOWER VOLATILITY ($\sigma$: $6,440 → $2,382), not directional profits. OFI helps avoid the worst outcomes rather than catching the best moves.
+3. **Risk-Adjusted Edge**: The improvement shows in reduced losses (from -\$3,352 to -\$1,234) and lower volatility ($\sigma$ from \$6,440 to \$2,382), not directional profits. OFI helps avoid the worst outcomes rather than catching the best moves.
 
 4. **Aligns with Literature**: Cont et al. (2014) found R² = 8.1% ($\rho$ ≈ 0.28) at FILL-LEVEL granularity with microsecond data. Our 1-second NBBO snapshots naturally show weaker correlations, but the economic value persists through quote skewing.
 
