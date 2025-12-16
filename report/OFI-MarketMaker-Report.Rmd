@@ -69,7 +69,7 @@ While @GlostenMilgrom1985 theoretically established the problem of adverse selec
 | Component        | Null Hypothesis (H0)      | Alternative (H1)          | Test Method           | Result                         |
 |------------------|---------------------------|---------------------------|-----------------------|--------------------------------|
 | OFI Indicator    | $\beta$ ≤ 0               | $\beta$ > 0, R² > 5%      | Linear regression     |  $\beta$ = 0.036, R² = 8.1%   |
-| OFI Strategy     | $\mu$_OFI ≥ μ_baseline    | $\mu$_OFI < μ_baseline    | Two-sample t-test     |  p < 0.001, $\Delta$ = 2,118  |
+| OFI Strategy     | $\mu$_OFI ≥ $\mu$_baseline    | $\mu$_OFI < $\mu$_baseline    | Two-sample t-test     |  p < 0.001, $\Delta$ = 2,118  |
 | Quote Skewing    | No impact on fills        | Reduces fills > 30%       | Count comparison      |  65% reduction                |
 | Spread Widening  | No AS reduction           | Reduces AS > 20%          | AS metrics            |  37% improvement              |
 
@@ -336,7 +336,7 @@ Uses `compute_ofi_depth_mid` from `src/ofi_utils.py` to compute OFI using Cont-K
 
 `BacktestConfig` dataclass specifies:
 
-- **Quoting parameters**: Risk aversion γ, terminal time T, tick size
+- **Quoting parameters**: Risk aversion $\gamma$, terminal time T, tick size
 - **Fill model**: Intensity A, decay k, time step $\delta$t
 - **OFI windows**: Multiple windows for feature computation (default: [5, 10, 30] seconds)
 - **Inventory limits**: Max/min position size (default: ±100 shares)
@@ -379,9 +379,9 @@ print(f"Total Volume: {result.total_volume} shares")
 **Critical Principle:** All metrics are **pure calculations** from observed data. NO parameter optimization or curve fitting on backtest results.
 
 **Parameter Sources (Not Optimized on Backtest Results):**
-- OFI Beta (β = 0.036): Estimated from an independent OFI replication study (Jan 2017, 40 symbol-days)
-- Risk Aversion (γ = 0.1): Chosen from the canonical Avellaneda–Stoikov (2008) range
-- OFI Signal Adjustment (α): Set using microstructure heuristics, not PnL optimization (hand-calibrated)
+- OFI Beta ($\beta$ = 0.036): Estimated from an independent OFI replication study (Jan 2017, 40 symbol-days)
+- Risk Aversion ($\gamma$ = 0.1): Chosen from the canonical Avellaneda–Stoikov (2008) range
+- OFI Signal Adjustment ($\alpha$): Set using microstructure heuristics, not PnL optimization (hand-calibrated)
 - Fill Model Parameters (A = 2.0, k = 0.5): Chosen to match realistic fill rates by spread regime
 
 This ensures results reflect **validation** of OFI signals, not overfitted backtest optimization.
@@ -390,7 +390,7 @@ This ensures results reflect **validation** of OFI signals, not overfitted backt
 
 #### Evidence AGAINST Overfitting
 
-1. **Parameter Source**: β from independent study, γ from literature (not fitted)
+1. **Parameter Source**: $\beta$ from independent study, $\gamma$ from literature (not fitted)
 2. **No Optimization**: Parameters were set ex-ante based on independent replication or standard literature values, and were not subsequently optimized against the backtest results.
 3. **Consistency**: 72% win rate across 100 date-symbol combinations (not one lucky run)
 4. **Monte Carlo p-value**: < 0.001 vs randomized OFI (true signal, not noise)
@@ -400,8 +400,8 @@ This ensures results reflect **validation** of OFI signals, not overfitted backt
 **Walk-Forward Structure**: Our methodology implements true out-of-sample testing:
 
 1. **Parameter Estimation Phase** (Separate Study):
-   - OFI Beta (β = 0.036) estimated from an independent replication study (8 symbols, 40 symbol-days)
-   - Risk aversion (γ) from Avellaneda-Stoikov (2008) literature
+   - OFI Beta ($\beta$ = 0.036) estimated from an independent replication study (8 symbols, 40 symbol-days)
+   - Risk aversion ($\gamma$) from Avellaneda-Stoikov (2008) literature
    - Fill model parameters from market microstructure theory
 
 2. **Testing Phase** (This Study):
@@ -409,7 +409,7 @@ This ensures results reflect **validation** of OFI signals, not overfitted backt
    - No optimization on test data - pure validation
    - 72% win rate across all 100 symbol-day combinations demonstrates temporal robustness
 
-**Critical Distinction**: Unlike in-sample optimization followed by out-of-sample testing, our entire 20-day test period is fully out-of-sample relative to parameter calibration. The β coefficient comes from a different set of symbols and dates than our market making backtests.
+**Critical Distinction**: Unlike in-sample optimization followed by out-of-sample testing, our entire 20-day test period is fully out-of-sample relative to parameter calibration. The $\beta$ coefficient comes from a different set of symbols and dates than our market making backtests.
 
 **Robustness Evidence**:
 - Consistent performance across 5 weeks (Week 1: 65%, Week 2: 70%, Week 3: 75%, Week 4: 73%, Week 5: 77% win rates)
@@ -418,11 +418,11 @@ This ensures results reflect **validation** of OFI signals, not overfitted backt
 
 #### Quantitative Overfitting Checks
 
-**Multiple Testing Adjustment**: Tested 4 strategies across 100 symbol-days = 400 comparisons. Using Bonferroni correction: α = 0.05/4 = 0.0125. Our p-value < 0.001 easily passes this conservative threshold, confirming results are not due to multiple testing luck.
+**Multiple Testing Adjustment**: Tested 4 strategies across 100 symbol-days = 400 comparisons. Using Bonferroni correction: $\alpha$ = 0.05/4 = 0.0125. Our p-value < 0.001 easily passes this conservative threshold, confirming results are not due to multiple testing luck.
 
 **Effect Size Stability**: Cohen's d = 0.42 (medium effect) is economically meaningful and consistent across subsamples. Small overfitting typically shows large in-sample effects that vanish out-of-sample - our consistent 63% improvement suggests genuine signal.
 
-**Parameter Sensitivity**: Performance robust to ±30% variations in risk aversion (γ), ±50% in signal strength (α), and alternative fill models. Overfitted strategies would show extreme sensitivity to parameter choices.
+**Parameter Sensitivity**: Performance robust to ±30% variations in risk aversion ($\gamma$), ±50% in signal strength ($\alpha$), and alternative fill models. Overfitted strategies would show extreme sensitivity to parameter choices.
 
 **Monte Carlo Null Test**: Randomized OFI timestamps 1,000 times to test null hypothesis that performance is due to chance. Result: 0.1% of random shuffles achieved ≥63% improvement (p = 0.001), confirming statistical significance.
 
@@ -529,15 +529,15 @@ $$
 
 **Critical Insight - Why Weak Correlation Drives Strong Performance**:
 
-The modest OFI-return correlation (ρ ≈ 0.01-0.04) might seem inconsistent with 63% performance improvement, but this reflects a fundamental principle in high-frequency trading:
+The modest OFI-return correlation ($\rho$ ≈ 0.01-0.04) might seem inconsistent with 63% performance improvement, but this reflects a fundamental principle in high-frequency trading:
 
 1. **Cumulative Edge**: Market making generates thousands of decisions per day (5,400 1-second intervals). A 52% directional accuracy (vs 50% random) compounds to significant P&L over many iterations.
 
-2. **Fill Avoidance Mechanism**: The primary benefit comes from AVOIDING fills during adverse selection periods (65% fill reduction: 772 → 274 fills/day), not from predicting exact price movements. Even a weak signal (ρ=0.02) is sufficient to identify toxic vs benign flow.
+2. **Fill Avoidance Mechanism**: The primary benefit comes from AVOIDING fills during adverse selection periods (65% fill reduction: 772 → 274 fills/day), not from predicting exact price movements. Even a weak signal ($\rho$=0.02) is sufficient to identify toxic vs benign flow.
 
 3. **Risk-Adjusted Edge**: The improvement shows in REDUCED LOSSES (-$3,352 → -$1,234) and LOWER VOLATILITY ($\sigma$: $6,440 → $2,382), not directional profits. OFI helps avoid the worst outcomes rather than catching the best moves.
 
-4. **Aligns with Literature**: Cont et al. (2014) found R² = 8.1% (ρ ≈ 0.28) at FILL-LEVEL granularity with microsecond data. Our 1-second NBBO snapshots naturally show weaker correlations, but the economic value persists through quote skewing.
+4. **Aligns with Literature**: Cont et al. (2014) found R² = 8.1% ($\rho$ ≈ 0.28) at FILL-LEVEL granularity with microsecond data. Our 1-second NBBO snapshots naturally show weaker correlations, but the economic value persists through quote skewing.
 
 **Mathematical Support**: 
 - Binomial test: 52% accuracy over 5,400 observations → p < 0.001 (highly significant)
@@ -579,7 +579,7 @@ Avellaneda-Stoikov quoting engine with OFI integration, implementing reservation
 
 **`maker/fills.py`** (330 lines, 26 tests passing)
 
-Parametric fill simulation with exponential decay model λ($\delta$) = A·exp(-k·$\delta$) for backtest realism.
+Parametric fill simulation with exponential decay model $\lambda$($\delta$) = A·exp(-k·$\delta$) for backtest realism.
 
 **`maker/backtest.py`** (NEW - 530 lines, 24 tests passing)
 
@@ -719,9 +719,9 @@ The metrics module was validated with 39 comprehensive tests using known-answer 
 
 **Signal Correlation**: Validation tool tested:
 
-- Perfect correlation → ρ = 1.0
-- Perfect anti-correlation → ρ = -1.0  
-- Random data → ρ ≈ 0
+- Perfect correlation → $\rho$ = 1.0
+- Perfect anti-correlation → $\rho$ = -1.0  
+- Random data → $\rho$ ≈ 0
 - Insufficient data → returns 0 (safe default)
 
 **Anti-Overfitting Verification**: All tests use **fixed synthetic data** with known answers. No data-dependent assertions - only mathematical correctness verified.
@@ -749,8 +749,8 @@ To isolate the contribution of each strategy component, we test four configurati
 |----------|-------------------|-------------------|----------|------------|----------------|
 | **1. Baseline** | ❌ Mid-price | 0% (disabled) | -$3,352 | 772 | — |
 | **2. Microprice** | ✅ Depth-weighted | 0% (disabled) | -$3,355 | 773 | -$3 (-0.1%) |
-| **3. OFI Ablation** | ✅ Depth-weighted | 50% (α=0.5) | -$1,234 | 274 | **+$2,121 (+63.3%)** 🏆 |
-| **4. OFI Full** | ✅ Depth-weighted | 70% (α=0.7) | -$1,321 | 226 | -$87 (-7.1%) |
+| **3. OFI Ablation** | ✅ Depth-weighted | 50% ($\alpha$=0.5) | -$1,234 | 274 | **+$2,121 (+63.3%)** 🏆 |
+| **4. OFI Full** | ✅ Depth-weighted | 70% ($\alpha$=0.7) | -$1,321 | 226 | -$87 (-7.1%) |
 
 **Component Contributions**:
 
@@ -820,9 +820,9 @@ See Appendix for all visualizations and statistical significance testing.
 
 We deliberately AVOID optimizing parameters on backtest data to prevent overfitting:
 
-1. **β (OFI beta)**: Estimated from separate 40-symbol-day replication study (out-of-sample)
-2. **γ (risk aversion)**: Standard value from Avellaneda-Stoikov (2008) literature  
-3. **α (signal adjustment)**: Hand-calibrated based on microstructure theory, then tested for robustness
+1. **$\beta$ (OFI beta)**: Estimated from separate 40-symbol-day replication study (out-of-sample)
+2. **$\gamma$ (risk aversion)**: Standard value from Avellaneda-Stoikov (2008) literature  
+3. **$\alpha$ (signal adjustment)**: Hand-calibrated based on microstructure theory, then tested for robustness
 
 ### Robustness Testing
 
@@ -838,7 +838,7 @@ Result: Performance robust across ±30% parameter variations (CV < 15%), confirm
 
 To ensure results generalize beyond in-sample data, we implemented walk-forward validation:
 
-- **Parameter Estimation**: β = 0.036 from **separate replication study** (8 symbols, 40 symbol-days, different time period)
+- **Parameter Estimation**: $\beta$ = 0.036 from **separate replication study** (8 symbols, 40 symbol-days, different time period)
 - **Test Period**: Fixed parameters applied to NEW data (5 symbols, 20 days January 2017)
 - **No Optimization**: Zero parameter tuning on test data - pure out-of-sample validation
 - **Temporal Robustness**: Consistent performance across 5 weeks (65-77% win rates)
@@ -859,7 +859,7 @@ The minimal degradation from parameter estimation to testing suggests the strate
 - **Fixed parameters** (no optimization on test set) naturally prevent overfitting  
 - **Cross-sectional consistency**: Works across different market caps (AAPL, AMD, AMZN, MSFT, NVDA) and sectors (Tech, Semiconductors, Retail)
 
-**Critical Distinction**: Unlike typical walk-forward testing where parameters are re-optimized on rolling windows, our entire 20-day test period is fully out-of-sample relative to β estimation. This provides stronger evidence against overfitting than rolling optimization approaches.
+**Critical Distinction**: Unlike typical walk-forward testing where parameters are re-optimized on rolling windows, our entire 20-day test period is fully out-of-sample relative to $\beta$ estimation. This provides stronger evidence against overfitting than rolling optimization approaches.
 
 ## OFI Mechanism and Adverse Selection Reduction
 
@@ -879,9 +879,9 @@ Our backtest employs a parametric fill model with exponential intensity decay: $
 
 **2. Parameter Sensitivity Analysis**: We systematically tested strategy robustness across parameter variations:
 
-**Quoting Parameters** (γ × α grid):
-- Risk aversion (γ): [0.05, 0.063, 0.08] → ±27% variation around baseline
-- Signal adjustment (α): [0.05, 0.075, 0.10] → ±33% variation around baseline
+**Quoting Parameters** ($\gamma$ × $\alpha$ grid):
+- Risk aversion ($\gamma$): [0.05, 0.063, 0.08] → ±27% variation around baseline
+- Signal adjustment ($\alpha$): [0.05, 0.075, 0.10] → ±33% variation around baseline
 - Result: 3×3 grid = 9 parameter combinations tested
 
 **Fill Model Parameters**:
@@ -891,7 +891,7 @@ Our backtest employs a parametric fill model with exponential intensity decay: $
 
 **Sensitivity Results** (see `figures/sensitivity_quick_pnl.png`):
 - Performance stable across ±30% parameter variations
-- Hand-calibrated values (γ=0.063, α=0.075) lie in center of good parameter region (marked with red star)
+- Hand-calibrated values ($\gamma$=0.063, $\alpha$=0.075) lie in center of good parameter region (marked with red star)
 - Coefficient of variation: Performance degradation < 15% in adjacent parameter cells
 - No "cliff effects": Gradual degradation confirms genuine signal, not overfit artifact
 
@@ -928,7 +928,7 @@ Results demonstrate robustness across:
 
 - **Temporal Variation**: Consistent across all 5 weeks of January 2017 (VIX 10.8-12.1)
 - **Market Cap**: Effective for large-cap (AAPL, MSFT), mid-cap (AMZN), and small-cap (AMD, NVDA)
-- **Parameter Sensitivity**: OFI benefits persist across variations in κ (0.0005-0.002) and η (0.25-1.0)
+- **Parameter Sensitivity**: OFI benefits persist across variations in $\kappa$ (0.0005-0.002) and $\eta$ (0.25-1.0)
 - **Fill Models**: Results robust to exponential, linear, and power-law intensity functions
 
 ## Practical Implementation Considerations
@@ -992,7 +992,7 @@ This project demonstrates that **integrating Order Flow Imbalance (OFI) signals 
 
 ## Future Research Directions
 
-1. **Machine Learning for OFI**: Neural networks to predict OFI or learn optimal κ, η dynamically
+1. **Machine Learning for OFI**: Neural networks to predict OFI or learn optimal $\kappa$, $\eta$ dynamically
 2. **Multi-Asset Portfolio**: Cross-asset OFI signals for portfolio market making
 3. **High-Frequency Data**: Validation using millisecond/microsecond TAQ data
 4. **Regime Switching**: Test performance during high-volatility periods (2020 COVID, 2022 inflation)
