@@ -15,7 +15,9 @@ authors:
 abstract: |
    This paper extends a successful replication of "The Price Impact of Order Book Events" (Cont, Kukanov & Stoikov, 2014) by developing an OFI-driven market making strategy that achieves a 63% loss reduction (72% win rate; $2,118 absolute improvement) compared to symmetric baselines. Building on the validated finding that order flow imbalance (OFI) predicts short-term price movements (mean R² = 8.1%, 100% positive beta rate across 40 symbol-days), we implement an Avellaneda-Stoikov quoting engine that integrates OFI signals to reduce adverse selection. Across 400 backtests (5 symbols, 20 trading days, January 2017), the OFI-integrated strategy demonstrates statistically significant improvements (p < 0.001) with consistent performance across all securities. The mechanism operates primarily through avoiding toxic fills (65% reduction in fill count) rather than optimizing individual fill quality. Results are robust to parameter variations and demonstrate practical value of academic microstructure research for market making.
    
-   **Repository**: https://github.com/xecuterisaquant/ofi-marketmaking-strat
+   \vspace{0.3cm}
+   
+   \noindent \textbf{Code Repository:} \url{https://github.com/xecuterisaquant/ofi-marketmaking-strat}
 keywords: ["market making", "order flow imbalance", "Avellaneda-Stoikov", "high-frequency trading", "algorithmic execution", "adverse selection"]
 nocite: |
   @PetersonReplication, @jabref, @Rmarkdown
