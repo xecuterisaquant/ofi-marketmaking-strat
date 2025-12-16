@@ -13,7 +13,7 @@ authors:
     affiliation: University of Illinois
 
 abstract: |
-   This paper extends a successful replication of "The Price Impact of Order Book Events" (Cont, Kukanov & Stoikov, 2014) by developing an OFI-driven market making strategy that achieves 63% loss reduction (72% win rate, $2,118 absolute improvement) compared to symmetric baselines. Building on the validated finding that order flow imbalance (OFI) predicts short-term price movements (mean R² = 8.1%, 100% positive beta rate across 40 symbol-days), we implement an Avellaneda-Stoikov quoting engine that integrates OFI signals to reduce adverse selection. Across 400 backtests (5 symbols, 20 trading days, January 2017), the OFI-integrated strategy demonstrates statistically significant improvements (p < 0.001) with consistent performance across all securities. The mechanism operates primarily through avoiding toxic fills (65% reduction in fill count) rather than optimizing individual fill quality. Results are robust to parameter variations and demonstrate practical value of academic microstructure research for market making.
+   This paper extends a successful replication of "The Price Impact of Order Book Events" (Cont, Kukanov & Stoikov, 2014) by developing an OFI-driven market making strategy that achieves a 63% loss reduction (72% win rate; $2,118 absolute improvement) compared to symmetric baselines. Building on the validated finding that order flow imbalance (OFI) predicts short-term price movements (mean R² = 8.1%, 100% positive beta rate across 40 symbol-days), we implement an Avellaneda-Stoikov quoting engine that integrates OFI signals to reduce adverse selection. Across 400 backtests (5 symbols, 20 trading days, January 2017), the OFI-integrated strategy demonstrates statistically significant improvements (p < 0.001) with consistent performance across all securities. The mechanism operates primarily through avoiding toxic fills (65% reduction in fill count) rather than optimizing individual fill quality. Results are robust to parameter variations and demonstrate practical value of academic microstructure research for market making.
 keywords: ["market making", "order flow imbalance", "Avellaneda-Stoikov", "high-frequency trading", "algorithmic execution", "adverse selection"]
 nocite: |
   @PetersonReplication, @jabref, @Rmarkdown
@@ -34,7 +34,7 @@ header-includes:
 
 # Introduction
 
-Market makers play a crucial role in modern financial markets by providing continuous liquidity, earning the bid-ask spread while managing two fundamental risks: inventory exposure and adverse selection [@GlostenMilgrom1985]. The challenge of adverse selection—being systematically picked off by informed traders—has intensified in the high-frequency trading era, where latencies are measured in microseconds and information asymmetries can materialize and dissipate within milliseconds.
+Market makers play a crucial role in modern financial markets by providing continuous liquidity, earning the bid-ask spread while managing two fundamental risks: inventory exposure and adverse selection [@GlostenMilgrom1985]. The challenge of adverse selection—being systematically picked off by informed traders—has intensified in the high-frequency trading era, where latency is measured in microseconds and information asymmetries can materialize and dissipate within milliseconds.
 
 This project develops a **market making strategy** that leverages **Order Flow Imbalance (OFI)** signals to mitigate adverse selection. Our approach builds on a completed replication study [@Cont2014] which demonstrated that normalized order flow imbalance explains 8.1% of 1-second price variance with universally positive beta coefficients across 40 symbol-day observations. This predictive power presents a concrete opportunity: by skewing quotes in the direction of expected price movement, a market maker can reduce adverse selection while maintaining liquidity provision.
 
@@ -62,16 +62,16 @@ Traditional stop-loss and take-profit rules do not apply, as the strategy aims t
 
 ## Order Flow Imbalance
 
-@Cont2014 provide the empirical and theoretical basis for the OFI signal used in this report. Their study demonstrates that short-horizon price changes are nearly linear in order flow imbalance—a composite of market orders, limit orders, and cancellations at the best quotes—showing that OFI is a robust proxy for supply–demand pressure. We replicate this result in our 2017 sample, finding 100% positive betas and a mean $𝑅^2 = 8.1\%$ across 40 symbol-days. Building on these insights, the report operationalizes OFI by integrating a normalized version of the signal directly into the quoting engine, using it to skew quotes and mitigate adverse selection. This shifts Cont et al.’s contribution from empirical characterization of price impact to a tactical market-making application that leverages OFI’s predictive power in real time.
+While @GlostenMilgrom1985 theoretically established the problem of adverse selection, @Cont2014 provided an empirical measure—OFI—to quantify its immediate market impact. Their study demonstrates that short-horizon price changes are nearly linear in order flow imbalance—a composite of market orders, limit orders, and cancellations at the best quotes—showing that OFI is a robust proxy for supply–demand pressure. We replicate this result in our 2017 sample, finding 100% positive betas and a mean $𝑅^2 = 8.1\%$ across 40 symbol-days. Building on these insights, the report operationalizes OFI by integrating a normalized version of the signal directly into the quoting engine, using it to skew quotes and mitigate adverse selection. This shifts Cont et al.’s contribution from empirical characterization of price impact to a tactical market-making application that leverages OFI’s predictive power in real time.
 
 ## Hypothesis Table
 
 | Component        | Null Hypothesis (H0)      | Alternative (H1)          | Test Method           | Result                         |
 |------------------|---------------------------|---------------------------|-----------------------|--------------------------------|
-| OFI Indicator    | β ≤ 0                     | β > 0, R² > 5%            | Linear regression     | ✅ β = 0.036, R² = 8.1%         |
-| OFI Strategy     | μ_OFI ≥ μ_baseline        | μ_OFI < μ_baseline        | Two-sample t-test     | ✅ p < 0.001, Δ = 2,118         |
-| Quote Skewing    | No impact on fills        | Reduces fills > 30%       | Count comparison      | ✅ 65% reduction               |
-| Spread Widening  | No AS reduction           | Reduces AS > 20%          | AS metrics            | ✅ 37% improvement             |
+| OFI Indicator    | $\beta$ ≤ 0               | $\beta$ > 0, R² > 5%      | Linear regression     |  $\beta$ = 0.036, R² = 8.1%   |
+| OFI Strategy     | $\mu$_OFI ≥ μ_baseline    | $\mu$_OFI < μ_baseline    | Two-sample t-test     |  p < 0.001, $\Delta$ = 2,118  |
+| Quote Skewing    | No impact on fills        | Reduces fills > 30%       | Count comparison      |  65% reduction                |
+| Spread Widening  | No AS reduction           | Reduces AS > 20%          | AS metrics            |  37% improvement              |
 
 # Constraints
 
@@ -79,7 +79,7 @@ Traditional stop-loss and take-profit rules do not apply, as the strategy aims t
 
 ### Hard Constraints
 - **Capital**: Fully funded (no margin), sufficient for 100-share positions in $100-200 stocks
-- **Inventory Risk**: ±100 shares maximum to limit overnight exposure (5x avg MMstrategy size)
+- **Inventory Risk**: ±100 shares maximum to limit overnight exposure (5x avg MM strategy size)
 - **Tick Size**: $0.01 minimum increment (exchange rule) → quotes rounded to nearest tick
 - **Transaction Costs**: Zero fees assumed (academic simplification, ~0.25 bps/fill in reality)
 - **Latency**: 1-second snapshots (NBBO granularity) → cannot compete with sub-millisecond HFT
@@ -91,7 +91,7 @@ Traditional stop-loss and take-profit rules do not apply, as the strategy aims t
 
 ### Design Impact
 - Inventory penalty $-q\gamma\sigma^2 T$ ensures positions closed by end-of-horizon
-- OFI skew bounded by ±2σ to avoid extreme quote deviation
+- OFI skew bounded by ±2$\sigma$ to avoid extreme quote deviation
 - Spread widening limited to 2× baseline to maintain competitiveness
 
 # Methodology
@@ -122,7 +122,7 @@ $$
 \text{OFI}^{\text{norm}}_t = \frac{\text{OFI}_t}{\overline{\text{Depth}}_t}
 $$
 
-The OFI signal in basis points is:
+The OFI signal in basis points (bps) is:
 
 $$
 \text{Signal}^{\text{OFI}}_t = \beta \cdot \text{OFI}^{\text{norm}}_t \cdot 100
@@ -132,7 +132,7 @@ where $\beta = 0.036$ is the mean beta coefficient from our replication.
 
 ### EWMA Volatility
 
-Volatility is estimated using EWMA of squared log returns with 60-second half-life, then annualized.
+Volatility is estimated using EWMA of squared log returns with a 60-second half-life, then annualized.
 
 ### Microprice
 
@@ -230,8 +230,8 @@ In the absence of historical fill data, we calibrate model parameters using spre
 The fill simulation module (`maker/fills.py`) implements:
 
 - **`ParametricFillModel`**: Dataclass storing $A$, $k$, and $\Delta t$ parameters
-- **`compute_intensity(δ)`**: Returns fill intensity for given distance
-- **`compute_fill_probability(δ)`**: Converts intensity to probability
+- **`compute_intensity($\delta$)`**: Returns fill intensity for given distance
+- **`compute_fill_probability($\delta$)`**: Converts intensity to probability
 - **`simulate_fill(price, microprice, side)`**: Stochastic fill simulation
 - **`simulate_fill_batch(...)`**: Vectorized simulation for multiple time steps
 - **`calibrate_intensity(nbbo_df)`**: Heuristic parameter estimation from NBBO
@@ -297,7 +297,7 @@ $$
 
 Fill probability: $P(\text{fill}|\delta) = 1 - \exp(-\lambda(\delta) \cdot \Delta t)$ where $\lambda(\delta) = A \cdot e^{-k\delta}$
 
-Aggressive quotes (δ < -5bp, crossing the market) fill with 100% probability.
+Aggressive quotes (e.g., bid > ask, typically implying a negative distance < -5bps) fill with 100% probability.
 
 **Inventory Update**: When filled:
 
@@ -337,7 +337,7 @@ Uses `compute_ofi_depth_mid` from `src/ofi_utils.py` to compute OFI using Cont-K
 `BacktestConfig` dataclass specifies:
 
 - **Quoting parameters**: Risk aversion γ, terminal time T, tick size
-- **Fill model**: Intensity A, decay k, time step Δt
+- **Fill model**: Intensity A, decay k, time step $\delta$t
 - **OFI windows**: Multiple windows for feature computation (default: [5, 10, 30] seconds)
 - **Inventory limits**: Max/min position size (default: ±100 shares)
 - **Random seed**: For reproducible fill simulation
@@ -378,10 +378,11 @@ print(f"Total Volume: {result.total_volume} shares")
 
 **Critical Principle:** All metrics are **pure calculations** from observed data. NO parameter optimization or curve fitting on backtest results.
 
-**Fixed Parameters (NOT fitted):**
-- OFI Beta (β = 0.036): From **separate replication study** (Jan 2017, 40 symbol-days)
-- Risk Aversion (γ = 0.1): From Avellaneda-Stoikov (2008) literature
-- Fill Model (A = 2.0, k = 0.5): From market microstructure theory
+**Parameter Sources (Not Optimized on Backtest Results):**
+- OFI Beta (β = 0.036): Estimated from an independent OFI replication study (Jan 2017, 40 symbol-days)
+- Risk Aversion (γ = 0.1): Chosen from the canonical Avellaneda–Stoikov (2008) range
+- OFI Signal Adjustment (α): Set using microstructure heuristics, not PnL optimization (hand-calibrated)
+- Fill Model Parameters (A = 2.0, k = 0.5): Chosen to match realistic fill rates by spread regime
 
 This ensures results reflect **validation** of OFI signals, not overfitted backtest optimization.
 
@@ -390,7 +391,7 @@ This ensures results reflect **validation** of OFI signals, not overfitted backt
 #### Evidence AGAINST Overfitting
 
 1. **Parameter Source**: β from independent study, γ from literature (not fitted)
-2. **No Optimization**: Parameters hand-calibrated, never optimized to maximize backtest Sharpe
+2. **No Optimization**: Parameters were set ex-ante based on independent replication or standard literature values, and were not subsequently optimized against the backtest results.
 3. **Consistency**: 72% win rate across 100 date-symbol combinations (not one lucky run)
 4. **Monte Carlo p-value**: < 0.001 vs randomized OFI (true signal, not noise)
 
@@ -399,7 +400,7 @@ This ensures results reflect **validation** of OFI signals, not overfitted backt
 **Walk-Forward Structure**: Our methodology implements true out-of-sample testing:
 
 1. **Parameter Estimation Phase** (Separate Study):
-   - OFI Beta (β = 0.036) estimated from independent replication study (8 symbols, 40 symbol-days)
+   - OFI Beta (β = 0.036) estimated from an independent replication study (8 symbols, 40 symbol-days)
    - Risk aversion (γ) from Avellaneda-Stoikov (2008) literature
    - Fill model parameters from market microstructure theory
 
@@ -436,7 +437,7 @@ These advanced metrics require additional infrastructure but would provide forma
 
 - **Mechanism Clear**: Fill avoidance (65% reduction) is interpretable, not black-box
 - **Magnitude Reasonable**: 63% improvement aligns with 8% OFI R² from literature
-- **Not Too Good**: Still losing money in absolute terms (realistic for academic sim)
+- **Not Too Good**: Still losing money in absolute terms (realistic for academic simulation)
 
 ### P&L Metrics
 
@@ -446,7 +447,7 @@ $$
 \text{Sharpe} = \frac{\mu_r - r_f}{\sigma_r} \sqrt{N}
 $$
 
-where $\mu_r$ is mean return, $\sigma_r$ is return volatility, $r_f$ is risk-free rate, $N$ is periods per year.
+where $\mu_r$ is mean return, $\sigma_r$ is return volatility, $r_f$ is risk-free rate, $N$ is the number of periods per year (e.g., ~252*6.5*3600 for 1-second intervals).
 
 **Sortino Ratio** (downside risk only):
 
@@ -534,16 +535,16 @@ The modest OFI-return correlation (ρ ≈ 0.01-0.04) might seem inconsistent wit
 
 2. **Fill Avoidance Mechanism**: The primary benefit comes from AVOIDING fills during adverse selection periods (65% fill reduction: 772 → 274 fills/day), not from predicting exact price movements. Even a weak signal (ρ=0.02) is sufficient to identify toxic vs benign flow.
 
-3. **Risk-Adjusted Edge**: The improvement shows in REDUCED LOSSES (-$3,352 → -$1,234) and LOWER VOLATILITY (σ: $6,440 → $2,382), not directional profits. OFI helps avoid the worst outcomes rather than catching the best moves.
+3. **Risk-Adjusted Edge**: The improvement shows in REDUCED LOSSES (-$3,352 → -$1,234) and LOWER VOLATILITY ($\sigma$: $6,440 → $2,382), not directional profits. OFI helps avoid the worst outcomes rather than catching the best moves.
 
 4. **Aligns with Literature**: Cont et al. (2014) found R² = 8.1% (ρ ≈ 0.28) at FILL-LEVEL granularity with microsecond data. Our 1-second NBBO snapshots naturally show weaker correlations, but the economic value persists through quote skewing.
 
 **Mathematical Support**: 
 - Binomial test: 52% accuracy over 5,400 observations → p < 0.001 (highly significant)
-- Effect size: 63% improvement with Cohen's d = 0.42 (medium-to-large economic effect)
+- Effect size: The effect is substantial, with a Cohen's d of 0.42. (medium-to-large economic effect)
 - The $2,118 absolute improvement across 274 fills = $7.73 per avoided toxic fill
 
-**Conclusion**: The weak observed correlation does NOT invalidate the strategy. Market making profitability stems from asymmetric loss avoidance (skipping bad fills) rather than symmetric profit capture (timing good fills). OFI provides exactly the information needed: identifying when NOT to trade.
+**Conclusion**: The weak observed correlation does NOT invalidate the strategy. Market-making profitability stems from asymmetric loss avoidance (skipping bad fills) rather than symmetric profit capture (timing good fills). OFI provides exactly the information needed: identifying when NOT to trade.
 
 ### Conservative Design
 
@@ -574,11 +575,11 @@ Feature engineering module implementing:
 
 **`maker/engine.py`** (465 lines, 25 tests passing)
 
-Avellaneda-Stoikov quoting engine with OFI integration implementing reservation price, quote width, and complete quote generation pipeline with tick rounding and market-crossing prevention.
+Avellaneda-Stoikov quoting engine with OFI integration, implementing reservation price, quote width, anda  complete quote generation pipeline with tick rounding and market-crossing prevention.
 
 **`maker/fills.py`** (330 lines, 26 tests passing)
 
-Parametric fill simulation with exponential decay model λ(δ) = A·exp(-k·δ) for backtest realism.
+Parametric fill simulation with exponential decay model λ($\delta$) = A·exp(-k·$\delta$) for backtest realism.
 
 **`maker/backtest.py`** (NEW - 530 lines, 24 tests passing)
 
@@ -638,7 +639,7 @@ All tests cover edge cases, mathematical correctness, and reproducibility.
 
 The parametric fill model was validated against expected theoretical properties with 26 passing tests:
 
-**Intensity Decay**: Fill intensity decreases exponentially with distance. At touch (δ=0), intensity = 2.0 fills/second (default). At 5bp, intensity < 0.1.
+**Intensity Decay**: Fill intensity decreases exponentially with distance. At touch ($\delta$=0), intensity = 2.0 fills/second (default). At 5bps, intensity < 0.1.
 
 **Fill Probability**: All simulated probabilities ∈ [0,1]. Monte Carlo simulations (N=1000) confirm expected fill rates: ~86% at touch, ~70% at 1bp, ~52% at 2bp.
 
@@ -648,7 +649,7 @@ The parametric fill model was validated against expected theoretical properties 
 
 ## Phase 4: Backtest Framework Validation (Completed)
 
-The event-driven backtest framework was validated with 24 integration tests ensuring end-to-end correctness:
+The event-driven backtest framework was validated with 24 integration tests, ensuring end-to-end correctness:
 
 **Order Lifecycle**: Order placement correctly updates active orders, cancelling previous quotes. Order dataclass validation ensures only 'bid'/'ask' sides and positive sizes are accepted.
 
@@ -740,13 +741,11 @@ We conducted 400 backtests across 5 symbols (AAPL, AMD, AMZN, MSFT, NVDA), 20 tr
 
 **Statistical Significance**: Two-sample t-test comparing OFI Ablation vs Baseline yields t = 8.76, **p < 0.001**, with Cohen's d = 0.42 (medium effect size). OFI Ablation outperforms OFI Full on all metrics.
 
-**Statistical Significance**: Two-sample t-test comparing OFI Ablation vs Baseline yields t = 8.76, **p < 0.001**, with Cohen's d = 0.42 (medium effect size). Results are robust across all symbols and time periods.
-
 ### Incremental Component Analysis
 
 To isolate the contribution of each strategy component, we test four configurations representing an incremental buildup:
 
-| Strategy | Microprice Center | OFI Signal Weight | Mean PnL | Fill Count | Marginal Δ PnL |
+| Strategy | Microprice Center | OFI Signal Weight | Mean PnL | Fill Count | Marginal $\delta$ PnL |
 |----------|-------------------|-------------------|----------|------------|----------------|
 | **1. Baseline** | ❌ Mid-price | 0% (disabled) | -$3,352 | 772 | — |
 | **2. Microprice** | ✅ Depth-weighted | 0% (disabled) | -$3,355 | 773 | -$3 (-0.1%) |
@@ -800,7 +799,7 @@ Breaking down how OFI achieves improvement:
 - OFI Ablation: -$1,234/run  
 - **Net Improvement: +$2,118/run**
 
-**3. Win Rate**: 72% of all 100 backtests show positive improvement over baseline.
+**3. Win Rate**: 72% of all 100 symbol-day backtests show improvement over baseline.
 
 See Appendix for all visualizations and statistical significance testing.
 
@@ -812,9 +811,9 @@ See Appendix for all visualizations and statistical significance testing.
 
 | Parameter | Symbol | Description | Range Tested | Final Value | Source |
 |-----------|--------|-------------|--------------|-------------|---------|
-| γ | gamma | Risk aversion | [0.05, 0.2] | 0.063 | A-S (2008) |
-| α | alpha | OFI adjustment | [0.05, 0.10] | 0.075 | Calibrated |
-| β | beta | OFI beta | Fixed | 0.036 | Replication |
+| $\gamma$ | gamma | Risk aversion | [0.05, 0.2] | 0.063 | A-S (2008) |
+| $\alpha$ | alpha | OFI adjustment | [0.05, 0.10] | 0.075 | Calibrated |
+| $\beta$ | beta | OFI beta | Fixed | 0.036 | Replication |
 | T | T | Terminal time | [60, 600]s | 300s | Mean reversion |
 
 ### Anti-Overfitting Protocol
@@ -868,7 +867,7 @@ The OFI-driven strategy reduces adverse selection through two complementary mech
 
 1. **Quote Skewing**: When OFI signals indicate buying (selling) pressure, the strategy shifts quotes upward (downward), reducing the probability of being filled at stale prices. This directional adjustment aligns market maker quotes with predicted short-term price movements.
 
-2. **Spread Widening**: During high absolute OFI periods (|OFI| > 1σ), the strategy widens spreads to provide additional protection against informed order flow, as documented in Figure A2 (time series analysis).
+2. **Spread Widening**: During high absolute OFI periods (|OFI| > 1$\sigma$), the strategy widens spreads to provide additional protection against informed order flow, as documented in Figure A2 (time series analysis).
 
 ## Fill Model Assumptions and Robustness
 
@@ -977,14 +976,14 @@ This project demonstrates that **integrating Order Flow Imbalance (OFI) signals 
 ## Contributions
 
 **Methodological**:
-- First large-scale empirical validation of OFI + Avellaneda-Stoikov integration
+- A comprehensive empirical validation of OFI + Avellaneda-Stoikov integration
 - Comprehensive statistical testing (parametric and non-parametric)
 - Transparent reporting of limitations and simulation assumptions
 
 **Empirical**:
 - Mechanism decomposition: adverse selection reduction vs fill avoidance
 - Cross-sectional and time-series robustness validation
-- 3.4M actual OFI observations from TAQ data analyzed
+- 3.4 million actual OFI observations from TAQ data analyzed
 
 **Practical**:
 - Production-grade implementation (141 passing tests, 100% coverage)
