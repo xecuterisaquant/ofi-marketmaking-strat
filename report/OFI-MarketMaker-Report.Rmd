@@ -806,6 +806,29 @@ See Appendix for all visualizations and statistical significance testing.
 
 # Discussion
 
+## Parameter Selection Methodology
+
+### Free Parameters
+
+| Parameter | Symbol | Description | Range Tested | Final Value | Source |
+|-----------|--------|-------------|--------------|-------------|---------|
+| γ | gamma | Risk aversion | [0.05, 0.2] | 0.1 | A-S (2008) |
+| κ | kappa | OFI strength | [0.0005, 0.002] | 0.001 | Theory |
+| η | eta | Spread widening | [0.25, 1.0] | 0.5 | Calibrated |
+| β | beta | OFI beta | Fixed | 0.036 | Replication |
+| T | T | Terminal time | [60, 600]s | 300s | Mean reversion |
+
+### Anti-Overfitting Protocol
+We deliberately AVOID optimizing parameters on backtest data to prevent overfitting:
+1. **β (OFI beta)**: Estimated from separate 40-symbol-day replication study (out-of-sample)
+2. **γ (risk aversion)**: Standard value from Avellaneda-Stoikov (2008) literature
+3. **κ, η**: Hand-calibrated based on microstructure theory, then tested for robustness
+
+### Robustness Testing
+Rather than optimizing to maximize the backtest Sharpe ratio, we test sensitivity:
+- Does improvement persist across parameter ranges?
+- Is performance stable or highly sensitive to exact values?
+
 ## OFI Mechanism and Adverse Selection Reduction
 
 The OFI-driven strategy reduces adverse selection through two complementary mechanisms:
@@ -839,6 +862,7 @@ Our backtest employs a parametric fill model with exponential intensity decay: $
 - Hand-calibrated values (γ=0.063, α=0.075) lie in center of good parameter region (marked with red star)
 - Coefficient of variation: Performance degradation < 15% in adjacent parameter cells
 - No "cliff effects": Gradual degradation confirms genuine signal, not overfit artifact
+
 
 **Interpretation**: The OFI benefit persists across wide parameter ranges. This robustness indicates the improvement stems from the fundamental OFI-price relationship rather than fortuitous parameter tuning. Overfit strategies typically exhibit extreme sensitivity where small parameter changes cause performance collapse - we observe no such behavior.
 
