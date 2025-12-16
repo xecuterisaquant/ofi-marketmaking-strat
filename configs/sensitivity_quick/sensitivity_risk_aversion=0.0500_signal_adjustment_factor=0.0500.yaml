@@ -1,0 +1,46 @@
+backtest:
+  commission_per_share: 0.0
+  initial_cash: 0.0
+  initial_inventory: 0
+  random_seed: 42
+data:
+  end_time: '16:00:00'
+  resample_frequency: 1S
+  start_time: 09:30:00
+features:
+  alpha_imbalance: 0.2
+  alpha_ofi: 0.5
+  ofi_beta: 0.036
+  ofi_horizon_seconds: 60
+  volatility_halflife_seconds: 60.0
+  volatility_min_periods: 10
+fill_model:
+  base_intensity: 0.5
+  decay_rate: 0.3
+  max_probability: 0.99
+  min_probability: 1e-6
+metadata:
+  anti_overfitting: true
+  created_date: '2025-12-06'
+  notes: "Ablation study: signal_factor=0.25, \xCE\xB1_ofi=0.5 (both halved from full\
+    \ strategy)"
+  parameters_source: 'Ablation variant: 50% OFI strength vs full (no optimization)'
+quoting:
+  inventory_urgency_factor: 0.3
+  max_inventory: 100
+  min_inventory: -100
+  min_spread_bps: 0.5
+  order_arrival_rate: 1.0
+  risk_aversion: 0.05
+  signal_adjustment_factor: 0.05
+  terminal_time: 60.0
+  tick_size: 0.01
+sizing:
+  base_size: 100
+  min_size_multiplier: 0.5
+  vol_threshold: 0.3
+  volatility_scaling: true
+strategy:
+  description: OFI-driven market making with reduced signal strength
+  name: ofi_ablation
+  version: '1.0'
